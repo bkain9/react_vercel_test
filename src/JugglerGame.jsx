@@ -559,6 +559,11 @@ export default function JugglerGame() {
                         />
                     </div>
 
+                    {/* JUGGLER LOGO OVERLAY */}
+                    <div className="absolute top-[12%] left-1/2 -translate-x-1/2 z-20 w-[25%] opacity-90 pointer-events-none">
+                        <img src="/icon_juggler.png" alt="Juggler" className="w-full drop-shadow-[0_0_15px_rgba(255,0,255,0.3)] filter brightness-110" />
+                    </div>
+
                     {/* 2. REEL WINDOW LAYER */}
                     <div
                         className="absolute z-10 flex justify-between items-center bg-black shadow-[inset_0_0_20px_black] border-0"
