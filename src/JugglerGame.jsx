@@ -179,6 +179,11 @@ export default function JugglerGame() {
     const [setting, setSetting] = useState(6);
     const [totalSpins, setTotalSpins] = useState(0);
 
+    // Stats State
+    const [bbCount, setBbCount] = useState(0);
+    const [rbCount, setRbCount] = useState(0);
+    const [currentSpins, setCurrentSpins] = useState(0);
+
     const [bonusFlag, setBonusFlag] = useState(null);
     const [spinCommand, setSpinCommand] = useState(null);
     const [winHighlights, setWinHighlights] = useState([]);
@@ -274,6 +279,7 @@ export default function JugglerGame() {
         }
 
         setTotalSpins(c => c + 1);
+        setCurrentSpins(c => c + 1); // Increment Current Spins
         setIsPlaying(true);
         setSpinning([true, true, true]);
         setWinHighlights([]); // Clear previous highlights
@@ -460,6 +466,12 @@ export default function JugglerGame() {
                 // Bet remains as is
             } else if (bonusWon) {
                 const isBB = totalWin >= 300;
+
+                // Update Stats
+                if (isBB) setBbCount(c => c + 1);
+                else setRbCount(c => c + 1);
+                setCurrentSpins(0); // Reset Current Spins on Bonus
+
                 soundManager.playFanfare(isBB ? 'BB' : 'RB');
 
                 // Atogogo Check: If lamp was silent, light it up now!
@@ -652,6 +664,47 @@ export default function JugglerGame() {
 
                 {/* SETUP SIDEBAR COLUMN */}
                 <div className="flex flex-col gap-4">
+
+                    {/* DATA COUNTER PANEL */}
+                    <div className="w-[300px] bg-gradient-to-b from-neutral-800 to-neutral-900 rounded-xl border-2 border-slate-600 p-1 text-white shadow-2xl">
+                        {/* Header Display */}
+                        <div className="bg-black rounded-lg p-2 mb-2 flex justify-between items-center bg-[url('/machine.png')] bg-cover bg-center blend-overlay relative overflow-hidden">
+                            <div className="absolute inset-0 bg-black/60"></div>
+                            <div className="relative z-10 flex flex-col items-center w-full">
+                                <span className="text-[10px] text-red-500 font-bold tracking-widest animate-pulse">DATA COUNTER</span>
+                                <div className="flex justify-between w-full px-4 mt-1">
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] text-slate-400">BIG</span>
+                                        <span className="text-2xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] text-slate-400">REG</span>
+                                        <span className="text-2xl font-['Digital-7'] text-green-500 drop-shadow-[0_0_5px_green]">{rbCount}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[10px] text-slate-400">TOTAL</span>
+                                        <span className="text-xl font-['Digital-7'] text-white">{totalSpins}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Main Counter */}
+                        <div className="bg-black/50 rounded p-4 flex flex-col items-center justify-center border border-slate-700">
+                            <span className="text-xs text-yellow-500 font-bold mb-1">CURRENT SPINS</span>
+                            <span className="text-5xl font-['Digital-7'] text-yellow-400 drop-shadow-[0_0_10px_orange]">
+                                {currentSpins}
+                            </span>
+                        </div>
+
+                        {/* Probability */}
+                        <div className="mt-2 text-center">
+                            <span className="text-[10px] text-slate-500">
+                                Total Prob: 1 / {totalSpins > 0 ? (totalSpins / (bbCount + rbCount || 1)).toFixed(1) : '-'}
+                            </span>
+                        </div>
+                    </div>
+
                     {/* KEY GUIDE PANEL */}
                     <div className="w-[300px] bg-slate-900/90 rounded-xl border border-slate-700 p-5 text-white shadow-xl">
                         <h3 className="text-lg font-bold text-slate-300 border-b border-slate-700 pb-2 mb-4 flex justify-between items-center">
