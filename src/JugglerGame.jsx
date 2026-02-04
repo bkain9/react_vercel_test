@@ -76,7 +76,7 @@ const Reel = React.memo(function Reel({ id, spinning, stopIndex, windowHeight, x
     // We adjust slightly to ensure no gaps or specific curvature
     const RADIUS = Math.round((ITEM_HEIGHT / 2) / Math.tan(Math.PI / ITEM_COUNT));
 
-    const SPIN_SPEED = 20; // Degrees per frame
+    const SPIN_SPEED = 15; // Degrees per frame
 
     const animate = () => {
         speed.current = SPIN_SPEED;
@@ -668,22 +668,21 @@ export default function JugglerGame() {
                     {/* DATA COUNTER PANEL */}
                     <div className="w-[300px] bg-gradient-to-b from-neutral-800 to-neutral-900 rounded-xl border-2 border-slate-600 p-1 text-white shadow-2xl">
                         {/* Header Display */}
-                        <div className="bg-black rounded-lg p-2 mb-2 flex justify-between items-center bg-[url('/machine.png')] bg-cover bg-center blend-overlay relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black/60"></div>
+                        <div className="bg-black rounded-lg p-3 mb-2 flex justify-between items-center relative overflow-hidden border border-slate-700">
                             <div className="relative z-10 flex flex-col items-center w-full">
-                                <span className="text-[10px] text-red-500 font-bold tracking-widest animate-pulse">DATA COUNTER</span>
-                                <div className="flex justify-between w-full px-4 mt-1">
+                                <span className="text-xs text-red-500 font-bold tracking-widest mb-1">DATA COUNTER</span>
+                                <div className="flex justify-between w-full px-2 mt-1">
                                     <div className="flex flex-col items-center">
-                                        <span className="text-[10px] text-slate-400">BIG</span>
-                                        <span className="text-2xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
+                                        <span className="text-sm font-bold text-slate-400">BIG</span>
+                                        <span className="text-3xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
                                     </div>
                                     <div className="flex flex-col items-center">
-                                        <span className="text-[10px] text-slate-400">REG</span>
-                                        <span className="text-2xl font-['Digital-7'] text-green-500 drop-shadow-[0_0_5px_green]">{rbCount}</span>
+                                        <span className="text-sm font-bold text-slate-400">REG</span>
+                                        <span className="text-3xl font-['Digital-7'] text-green-500 drop-shadow-[0_0_5px_green]">{rbCount}</span>
                                     </div>
                                     <div className="flex flex-col items-center">
-                                        <span className="text-[10px] text-slate-400">TOTAL</span>
-                                        <span className="text-xl font-['Digital-7'] text-white">{totalSpins}</span>
+                                        <span className="text-sm font-bold text-slate-400">TOTAL</span>
+                                        <span className="text-2xl font-['Digital-7'] text-white">{totalSpins}</span>
                                     </div>
                                 </div>
                             </div>
