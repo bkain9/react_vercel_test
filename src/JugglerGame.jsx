@@ -412,6 +412,8 @@ export default function JugglerGame() {
                 else if (s1 === '7' && s2 === '7' && s3 === 'BAR') { totalWin += 100; bonusWon = true; lineWin = true; }
                 else if (s1 === '🍇' && s2 === '🍇' && s3 === '🍇') { totalWin += 8; lineWin = true; }
                 else if (s1 === '🦏' && s2 === '🦏' && s3 === '🦏') { replayTrigger = true; lineWin = true; }
+                else if (s1 === '🤡' && s2 === '🤡' && s3 === '🤡') { totalWin += 14; lineWin = true; } // Juggler Win
+                else if (s1 === 'BAR' && s2 === 'BAR' && s3 === 'BAR') { totalWin += 14; lineWin = true; } // BAR Win
 
                 if (lineWin) {
                     newHighlights.push({ r: 0, i: offsets[0] });
