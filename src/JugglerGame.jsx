@@ -184,12 +184,15 @@ export default function JugglerGame() {
     const [rbCount, setRbCount] = useState(0);
     const [currentSpins, setCurrentSpins] = useState(0);
 
+    // Bonus Stage State: { type: 'BB' | 'RB', count: 0 } or null
+    const [bonusStage, setBonusStage] = useState(null);
+
     const [bonusFlag, setBonusFlag] = useState(null);
     const [spinCommand, setSpinCommand] = useState(null);
     const [winHighlights, setWinHighlights] = useState([]);
 
-    const stateRef = useRef({ spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay });
-    useEffect(() => { stateRef.current = { spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay }; }, [spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay]);
+    const stateRef = useRef({ spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage });
+    useEffect(() => { stateRef.current = { spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage }; }, [spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage]);
 
     // Helper: Parse "1/273.1" -> 1/273.1
     const parseRatio = (str) => {
@@ -226,6 +229,12 @@ export default function JugglerGame() {
         const currentCredits = stateRef.current.credits;
         const currentBet = stateRef.current.bet;
         const currentPayout = stateRef.current.payout;
+
+        // Bonus Stage Bet Limit: Max 2
+        if (stateRef.current.bonusStage && targetBet > 2) {
+            targetBet = 2;
+        }
+
         const cost = targetBet - currentBet;
 
         // Check affordability
@@ -292,8 +301,17 @@ export default function JugglerGame() {
         let command = 'MISS';
         const rng = Math.random();
 
-        // 1. Check Bonus Flag (Priority)
-        if (stateRef.current.bonusFlag) {
+        // 1. Check Bonus Flag (Priority) - BUT Ignore if in Bonus Stage
+        if (stateRef.current.bonusStage) {
+            // --- BONUS STAGE RNG ---
+            // High probability of win (Grape/Cherry)
+            // Payout is 14.
+            const subRng = Math.random();
+            // 90% chance to win Grape/Cherry to sustain play
+            if (subRng < 0.8) command = 'GRAPE';
+            else if (subRng < 0.9) command = 'CHERRY';
+            else command = 'MISS'; // Occasional miss
+        } else if (stateRef.current.bonusFlag) {
             command = stateRef.current.bonusFlag;
         } else {
             // 2. Roll for New Bonus
@@ -414,9 +432,21 @@ export default function JugglerGame() {
             for (const { offsets, symbols } of lineDefs) {
                 const [s1, s2, s3] = symbols;
                 let lineWin = false;
-                if (s1 === '7' && s2 === '7' && s3 === '7') { totalWin += 300; bonusWon = true; lineWin = true; }
-                else if (s1 === '7' && s2 === '7' && s3 === 'BAR') { totalWin += 100; bonusWon = true; lineWin = true; }
-                else if (s1 === '🍇' && s2 === '🍇' && s3 === '🍇') { totalWin += 8; lineWin = true; }
+
+                // --- BONUS TRIGGER ---
+                if (s1 === '7' && s2 === '7' && s3 === '7') {
+                    // Start BB (No Payout yet)
+                    if (!bonusStage) { bonusWon = true; lineWin = true; } // Only trigger if not already in bonus
+                }
+                else if (s1 === '7' && s2 === '7' && s3 === 'BAR') {
+                    // Start RB
+                    if (!bonusStage) { bonusWon = true; lineWin = true; }
+                }
+                // --- NORMAL / BONUS WINS ---
+                else if (s1 === '🍇' && s2 === '🍇' && s3 === '🍇') {
+                    totalWin += (bonusStage ? 14 : 8); // Bonus Mode Pays 14
+                    lineWin = true;
+                }
                 else if (s1 === '🦏' && s2 === '🦏' && s3 === '🦏') { replayTrigger = true; lineWin = true; }
                 else if (s1 === '🤡' && s2 === '🤡' && s3 === '🤡') { totalWin += 14; lineWin = true; } // Juggler Win
                 else if (s1 === 'BAR' && s2 === 'BAR' && s3 === 'BAR') { totalWin += 14; lineWin = true; } // BAR Win
@@ -445,7 +475,7 @@ export default function JugglerGame() {
             });
 
             if (cherryCount >= 2) {
-                totalWin += 2;
+                totalWin += (bonusStage ? 14 : 2); // Bonus Mode Pays 14 for Cherry too (Simplified high payout)
                 // Highlight all cherries
                 reelsObj.forEach((rObj, rIdx) => {
                     [-1, 0, 1].forEach(offset => {
@@ -465,25 +495,54 @@ export default function JugglerGame() {
                 setIsReplay(true);
                 // Bet remains as is
             } else if (bonusWon) {
-                const isBB = totalWin >= 300;
+                // --- ENTER BONUS STAGE ---
+                // Determine Type based on Spin Command or alignment (Simplified: use spinCommand if available, else BB default)
+                // Actually we should inspect the line. But we know what we stopped. 
+                // Let's use internal check:
+                let type = 'BB';
+                // Check if we hit RB (7-7-BAR)
+                const r0 = getReelSymbols(0, stops[0]);
+                const r1 = getReelSymbols(1, stops[1]);
+                const r2 = getReelSymbols(2, stops[2]);
+                // Simple check: if right reel has BAR in center/top/bottom matched with 7s...
+                // Ideally passing 'isBB' from evaluating loop would be cleaner, but let's re-eval or rely on command.
+                // Reliable way: Check the spinCommand that triggered this.
+                if (spinCommand === 'RB') type = 'RB';
 
-                // Update Stats
-                if (isBB) setBbCount(c => c + 1);
+                // Init Bonus Stage
+                setBonusStage({ type, count: 0 });
+                soundManager.playFanfare(type);
+
+                // Update Stats (BB/RB Count)
+                if (type === 'BB') setBbCount(c => c + 1);
                 else setRbCount(c => c + 1);
-                setCurrentSpins(0); // Reset Current Spins on Bonus
+                setCurrentSpins(0); // Reset "Current Spins" counter
 
-                soundManager.playFanfare(isBB ? 'BB' : 'RB');
-
-                // Atogogo Check: If lamp was silent, light it up now!
-                if (gogoState === 'OFF') setGogoState('ON');
-
+                setGogoState('ON'); // Ensure Lamp ON
                 setBonusFlag(null);
-                // Do NOT setGogoState('OFF') here. It stays ON until next spin.
-
-                setPayout(totalWin > 300 ? 300 : totalWin);
+                setPayout(0); // No instant payout
                 setBet(0);
+
             } else if (totalWin > 0) {
                 soundManager.playWin();
+
+                // --- BONUS STAGE PROGRESS ---
+                if (bonusStage) {
+                    const add = totalWin;
+                    const nextCount = bonusStage.count + add;
+                    const limit = bonusStage.type === 'BB' ? 280 : 80;
+
+                    if (nextCount > limit) {
+                        // --- BONUS END ---
+                        setBonusStage(null);
+                        setGogoState('OFF');
+                        soundManager.stopFanfare(); // Or play end sound
+                    } else {
+                        // Continue Bonus
+                        setBonusStage(prev => ({ ...prev, count: nextCount }));
+                    }
+                }
+
                 setPayout(totalWin);
                 setBet(0); // Bet consumed
             } else {
@@ -628,7 +687,7 @@ export default function JugglerGame() {
                                 888
                             </span>
                             <span className="text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '42px', textAlign: 'center', filter: 'contrast(1.5) brightness(1.2)' }}>
-                                {Math.min(totalSpins, 999).toString().padStart(3, '0')}
+                                {bonusStage ? bonusStage.count.toString().padStart(3, '0') : '000'}
                             </span>
                         </div>
 
