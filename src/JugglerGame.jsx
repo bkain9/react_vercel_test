@@ -80,7 +80,7 @@ const Reel = React.memo(function Reel({ id, spinning, stopIndex, windowHeight, x
 
     const animate = () => {
         speed.current = SPIN_SPEED;
-        setAngle(prev => (prev + speed.current) % 360);
+        setAngle(prev => (prev - speed.current) % 360); // Reverse direction (Up -> Down)
         requestRef.current = requestAnimationFrame(animate);
     };
 
