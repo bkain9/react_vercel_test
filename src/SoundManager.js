@@ -66,6 +66,7 @@ class SoundManager {
     }
 
     startSpinSound() {
+        this.stopFanfare(); // Ensure bonus sound stops on new spin
         this.init();
         if (this.spinOsc) return; // Already spinng
 
