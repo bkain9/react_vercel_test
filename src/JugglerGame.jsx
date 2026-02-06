@@ -186,6 +186,7 @@ export default function JugglerGame() {
 
     // Coin Box State
     const [coins, setCoins] = useState(0);
+    const [isCharging, setIsCharging] = useState(false); // Locking state
 
     // Bonus Stage State: { type: 'BB' | 'RB', count: 0 } or null
     const [bonusStage, setBonusStage] = useState(null);
@@ -231,19 +232,23 @@ export default function JugglerGame() {
     }
 
     const handleChargeCoins = () => {
+        if (isCharging) return; // Prevent double click
+        setIsCharging(true);
+
         // Animate +50 Coins (1 by 1)
         let count = 0;
         const interval = setInterval(() => {
             setCoins(c => c + 1);
-            // Play a shorter/quieter coin sound for rapid fire
-            // We can reuse playInsertCoin or a new sound. 
             // "Coin piling up sound" - Heavy metallic clinking
             // We use the new playMetallicClink() which has partials
             soundManager.playMetallicClink();
 
             count++;
-            if (count >= 50) clearInterval(interval);
-        }, 30); // Fast interval
+            if (count >= 50) {
+                clearInterval(interval);
+                setIsCharging(false);
+            }
+        }, 70); // Fast interval
     };
 
     const handleInsertCoin = () => {
@@ -277,23 +282,12 @@ export default function JugglerGame() {
         const cost = targetBet - currentBet;
 
         // Check affordability
-        if (currentCredits + currentPayout < cost) return;
+        if (currentCredits < cost) return;
 
         // 1. Apply Bet Logic (Immediate)
         setBet(targetBet);
         setPayout(0);
         setCredits(c => c - cost);
-
-        // 2. Animate Payout Collection (if any)
-        if (currentPayout > 0) {
-            let count = 0;
-            const interval = setInterval(() => {
-                setCredits(c => c + 1);
-                soundManager.playCount();
-                count++;
-                if (count >= currentPayout) clearInterval(interval);
-            }, 50);
-        }
     };
 
     const pullLever = () => {
@@ -307,44 +301,11 @@ export default function JugglerGame() {
         soundManager.startSpinSound();
 
         // Auto-collect payout if exists (Standard game only)
+        // Since we now handle payout IMMEDIATELY in useEffect, we don't need to collect it here!
+        // But we might want to clear the 'payout' display if it's still showing the last win.
         if (!stateRef.current.isReplay && stateRef.current.payout > 0) {
-            const p = stateRef.current.payout;
-            const currentC = stateRef.current.credits;
             setPayout(0);
-
-            // Calculate Overflow
-            const space = 50 - currentC;
-            let addToCredit = 0;
-            let overflow = 0;
-
-            if (p <= space) {
-                addToCredit = p;
-            } else {
-                addToCredit = Math.max(0, space);
-                overflow = p - addToCredit;
-            }
-
-            if (overflow > 0) {
-                // Animate Overflow into Coins
-                let outCount = 0;
-                const intervalOut = setInterval(() => {
-                    setCoins(c => c + 1);
-                    soundManager.playMetallicClink(); // Clink for every coin
-                    outCount++;
-                    if (outCount >= overflow) clearInterval(intervalOut);
-                }, 50);
-            }
-
-            // Animate Payout to Credit
-            if (addToCredit > 0) {
-                let count = 0;
-                const interval = setInterval(() => {
-                    setCredits(c => c + 1);
-                    soundManager.playCount();
-                    count++;
-                    if (count >= addToCredit) clearInterval(interval);
-                }, 50);
-            }
+            // We do NOT add to credits here, because it was already added in useEffect.
         }
 
         // Clean Replay state if it was active
@@ -608,31 +569,40 @@ export default function JugglerGame() {
                     }
                 }
 
+                // --- IMMEDIATE PAYOUT & OVERFLOW LOGIC ---
+                // 1. Calculate how much fits in credit (Max 50)
+                const currentC = stateRef.current.credits; // Use Ref for latest value
+                const space = 50 - currentC;
+
+                let addToCredit = 0;
+                let overflow = 0;
+
+                if (totalWin <= space) {
+                    addToCredit = totalWin;
+                } else {
+                    addToCredit = Math.max(0, space);
+                    overflow = totalWin - addToCredit;
+                }
+
+                // 2. Add to Credit (Immediate)
+                if (addToCredit > 0) {
+                    setCredits(c => c + addToCredit);
+                }
+
+                // 3. Overflow to Coins (Animated)
+                if (overflow > 0) {
+                    let outCount = 0;
+                    const intervalOut = setInterval(() => {
+                        setCoins(c => c + 1);
+                        soundManager.playMetallicClink();
+                        outCount++;
+                        if (outCount >= overflow) clearInterval(intervalOut);
+                    }, 70);
+                }
+
+                // Set payout for display only (don't rely on it for logic)
                 setPayout(totalWin);
                 setBet(0); // Bet consumed
-
-                // --- OVERFLOW CHECK (Pay out to Coin Box if Credits > 50) ---
-                // We need to check credits AFTER the payout is added.
-                // However, setCredits is async. 
-                // Logic: Current Credits + Payout. If > 50, put difference in Coins.
-                // Note: Standard Juggler pays out ALL credits if > 50? Or just overflow?
-                // Usually: Max 50 credits. Anything above is paid out.
-                // Let's implement Overflow:
-                // Pre-calculate what 'newCredits' would be
-                const currentCreds = stateRef.current.credits; // Approximate
-                // Actually 'payout' is not added to 'credits' yet. User must 'collect' it or Replay adds it?
-                // In Juggler: Wins are added to Credit if < 50. Else paid out.
-                // My current implementation: 'payout' state sits there until 'pullLever' collects it (Lines 261-274).
-
-                // Let's AUTO-COLLECT Overflow during the Payout Phase in pullLever?
-                // Or handle it here?
-                // Request said: "When receiving payout... if credit > 50, excess goes to coin box".
-                // Since my logic has a 'payout' state, let's modify the auto-collect logic in pullLever OR do it here.
-
-                // Actually, let's do it right here:
-                // If we want to simulate "Direct Payout" for overflow:
-                // But wait, the Payout is stored in 'payout' state.
-                // Let's leave it for now. The user said "When receiving bonus or reward...".
 
             } else {
                 setBet(0); // Bet consumed even on loss
@@ -860,9 +830,10 @@ export default function JugglerGame() {
 
                     <button
                         onClick={handleChargeCoins}
-                        className="bg-green-500 hover:bg-green-400 text-black font-bold py-3 px-6 rounded-lg shadow-[0_4px_0_rgb(21,128,61)] active:shadow-none active:translate-y-[4px] transition-all border-2 border-green-600"
+                        disabled={isCharging}
+                        className={`bg-green-500 hover:bg-green-400 text-black font-bold py-3 px-6 rounded-lg shadow-[0_4px_0_rgb(21,128,61)] active:shadow-none active:translate-y-[4px] transition-all border-2 border-green-600 ${isCharging ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        CHARGE (+50)
+                        {isCharging ? 'CHARGING...' : 'CHARGE (+50)'}
                     </button>
                 </div>
 
