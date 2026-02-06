@@ -188,6 +188,12 @@ export default function JugglerGame() {
     const [coins, setCoins] = useState(0);
     const [isCharging, setIsCharging] = useState(false); // Locking state
 
+    // Config State
+    const [showConfig, setShowConfig] = useState(false);
+
+    // Secret Tap Ref
+    const tapRef = useRef({ count: 0, lastTime: 0 });
+
     // Bonus Stage State: { type: 'BB' | 'RB', count: 0 } or null
     const [bonusStage, setBonusStage] = useState(null);
 
@@ -210,10 +216,14 @@ export default function JugglerGame() {
     useEffect(() => {
         const handleResize = () => {
             // Fit to screen (Max height 90vh, Max width 95vw)
-            const hRatio = (window.innerHeight * 0.9) / imgSize.h;
-            // Width of machine (imgSize.w) + sidebar (300) + gap (32)
-            const totalW = imgSize.w + 350;
+            // Vertical Layout: Machine Height + Counter (approx 80px) + CoinBox (80px) + Gaps
+            const totalH = imgSize.h + 200;
+            const hRatio = (window.innerHeight * 0.95) / totalH;
+
+            // Width: Just machine width (plus margins)
+            const totalW = imgSize.w + 40;
             const wRatio = (window.innerWidth * 0.95) / totalW;
+
             setScale(Math.min(wRatio, hRatio));
         };
         window.addEventListener('resize', handleResize);
@@ -223,6 +233,23 @@ export default function JugglerGame() {
 
     // Game Logic
     // Game Logic
+    // --- BETTING LOGIC ---
+    const handleSecretTap = () => {
+        const now = Date.now();
+        if (now - tapRef.current.lastTime < 500) {
+            tapRef.current.count++;
+        } else {
+            tapRef.current.count = 1;
+        }
+        tapRef.current.lastTime = now;
+
+        if (tapRef.current.count >= 3) {
+            setShowConfig(true);
+            tapRef.current.count = 0;
+            soundManager.playClick();
+        }
+    };
+
     // --- BETTING LOGIC ---
     const handleBetPlus = () => {
         // Cycle 1 -> 2 -> 3 -> 1
@@ -680,12 +707,36 @@ export default function JugglerGame() {
         <div className="w-screen h-screen bg-neutral-900 flex items-center justify-center overflow-hidden">
 
             <div
-                className="flex flex-row items-start justify-center gap-8"
+                className="flex flex-col items-center justify-start gap-4"
                 style={{
                     transform: `scale(${scale})`,
-                    transformOrigin: 'center center'
+                    transformOrigin: 'top center',
+                    marginTop: '20px'
                 }}
             >
+                {/* DATA COUNTER (Mobile Layout) */}
+                <div className="w-[300px] bg-gradient-to-b from-neutral-800 to-neutral-900 rounded-xl border-2 border-slate-600 p-1 text-white shadow-2xl mb-2 shrink-0">
+                    <div className="bg-black rounded-lg p-3 mb-2 flex justify-between items-center relative overflow-hidden border border-slate-700">
+                        <div className="relative z-10 flex flex-col items-center w-full">
+                            <span className="text-xs text-red-500 font-bold tracking-widest mb-1">DATA COUNTER</span>
+                            <div className="flex justify-between w-full px-2 mt-1">
+                                <div className="flex flex-col items-center">
+                                    <span className="text-sm font-bold text-slate-400">BIG</span>
+                                    <span className="text-3xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-sm font-bold text-slate-400">REG</span>
+                                    <span className="text-3xl font-['Digital-7'] text-green-500 drop-shadow-[0_0_5px_green]">{rbCount}</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-sm font-bold text-slate-400">TOTAL</span>
+                                    <span className="text-2xl font-['Digital-7'] text-white">{totalSpins}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* MACHINE */}
                 <div style={{
                     width: `${imgSize.w}px`,
@@ -818,6 +869,19 @@ export default function JugglerGame() {
                         title="Start Spin"
                     ></div>
 
+                    {/* HIDDEN TOUCH TRIGGER (Triple Tap Config) */}
+                    <div
+                        className="absolute z-50 cursor-pointer"
+                        style={{
+                            left: '20%',
+                            bottom: '0%',
+                            width: '60%',
+                            height: '150px',
+                            opacity: 0
+                        }}
+                        onClick={handleSecretTap}
+                    ></div>
+
                     {/* Stop Buttons: 222, 578 (186x54) - Flex Container */}
                     <div
                         className="absolute z-30 flex justify-between"
@@ -832,10 +896,8 @@ export default function JugglerGame() {
 
                 {/* COIN BOX (Under Machine) */}
                 <div
-                    className="absolute bg-black border-4 border-neutral-800 rounded-b-xl flex flex-row items-center justify-between px-6 shadow-2xl"
+                    className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-row items-center justify-between px-6 shadow-2xl"
                     style={{
-                        top: '100%',
-                        left: 0,
                         width: `${imgSize.w}px`, // Match machine width
                         height: '70px', // Reduced height
                         marginTop: '-10px', // Adjust overlap
@@ -861,142 +923,45 @@ export default function JugglerGame() {
                     </button>
                 </div>
 
-                {/* SETUP SIDEBAR COLUMN */}
-                <div className="flex flex-col gap-4">
+                {/* CONFIG MODAL */}
+                {showConfig && (
+                    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
+                        <div className="w-full max-w-[350px] bg-slate-800 rounded-xl border border-slate-600 p-6 text-white shadow-2xl flex flex-col gap-6 relative animate-pulse-once">
+                            <button
+                                onClick={() => setShowConfig(false)}
+                                className="absolute top-2 right-2 p-2 text-slate-400 hover:text-white"
+                            >✕</button>
 
-                    {/* DATA COUNTER PANEL */}
-                    <div className="w-[300px] bg-gradient-to-b from-neutral-800 to-neutral-900 rounded-xl border-2 border-slate-600 p-1 text-white shadow-2xl">
-                        {/* Header Display */}
-                        <div className="bg-black rounded-lg p-3 mb-2 flex justify-between items-center relative overflow-hidden border border-slate-700">
-                            <div className="relative z-10 flex flex-col items-center w-full">
-                                <span className="text-xs text-red-500 font-bold tracking-widest mb-1">DATA COUNTER</span>
-                                <div className="flex justify-between w-full px-2 mt-1">
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-sm font-bold text-slate-400">BIG</span>
-                                        <span className="text-3xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-sm font-bold text-slate-400">REG</span>
-                                        <span className="text-3xl font-['Digital-7'] text-green-500 drop-shadow-[0_0_5px_green]">{rbCount}</span>
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-sm font-bold text-slate-400">TOTAL</span>
-                                        <span className="text-2xl font-['Digital-7'] text-white">{totalSpins}</span>
-                                    </div>
+                            <h2 className="text-2xl font-bold text-center text-yellow-400 border-b border-slate-600 pb-4">
+                                🎰 Config
+                            </h2>
+
+                            <div>
+                                <label className="block text-slate-400 mb-3 font-semibold text-sm">Game Setting (Start Value)</label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {[1, 2, 3, 4, 5, 6].map(num => (
+                                        <button
+                                            key={num}
+                                            onClick={() => { soundManager.playClick(); setSetting(num); }}
+                                            className={`
+                                            py-3 rounded-lg font-black text-xl transition-all
+                                            ${setting === num
+                                                    ? 'bg-gradient-to-br from-pink-500 to-red-600 shadow-[0_0_15px_red] scale-105'
+                                                    : 'bg-slate-700 hover:bg-slate-600 text-slate-400'}
+                                        `}
+                                        >
+                                            {num}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Main Counter */}
-                        <div className="bg-black/50 rounded p-4 flex flex-col items-center justify-center border border-slate-700">
-                            <span className="text-xs text-yellow-500 font-bold mb-1">CURRENT SPINS</span>
-                            <span className="text-5xl font-['Digital-7'] text-yellow-400 drop-shadow-[0_0_10px_orange]">
-                                {currentSpins}
-                            </span>
-                        </div>
-
-                        {/* Probability */}
-                        <div className="mt-2 text-center">
-                            <span className="text-[10px] text-slate-500">
-                                Total Prob: 1 / {totalSpins > 0 ? (totalSpins / (bbCount + rbCount || 1)).toFixed(1) : '-'}
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* KEY GUIDE PANEL */}
-                    <div className="w-[300px] bg-slate-900/90 rounded-xl border border-slate-700 p-5 text-white shadow-xl">
-                        <h3 className="text-lg font-bold text-slate-300 border-b border-slate-700 pb-2 mb-4 flex justify-between items-center">
-                            <span>⌨️ Key Guide</span>
-                            <span className="text-xs bg-slate-700 px-2 py-1 rounded text-cyan-300">Bet: {bet}</span>
-                        </h3>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex items-center justify-between">
-                                <span className="bg-slate-700 w-8 h-8 flex items-center justify-center rounded font-mono font-bold shadow-sm">Q</span>
-                                <span className="text-slate-400">Cycle Bet (1~3)</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="bg-slate-700 w-8 h-8 flex items-center justify-center rounded font-mono font-bold shadow-sm">~</span>
-                                <span className="text-slate-400">MAX BET (3)</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="bg-slate-700 px-3 h-8 flex items-center justify-center rounded font-mono font-bold shadow-sm">Space</span>
-                                <span className="text-slate-400">Spin Reel</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex gap-1">
-                                    <span className="bg-slate-700 w-8 h-8 flex items-center justify-center rounded font-mono font-bold shadow-sm">1</span>
-                                    <span className="bg-slate-700 w-8 h-8 flex items-center justify-center rounded font-mono font-bold shadow-sm">2</span>
-                                    <span className="bg-slate-700 w-8 h-8 flex items-center justify-center rounded font-mono font-bold shadow-sm">3</span>
-                                </div>
-                                <span className="text-slate-400">Stop Reels</span>
+                            <div className="bg-slate-900 rounded p-3 text-xs text-slate-400 text-center">
+                                Triple Tap Bottom Machine Area to Open
                             </div>
                         </div>
                     </div>
-
-                    <div className="flex flex-col gap-4">
-                        <div className="w-[300px] bg-slate-900/90 rounded-xl border border-slate-700 p-5 text-white shadow-xl">
-                            <h3 className="text-lg font-bold text-slate-300 border-b border-slate-700 pb-2 mb-4 flex justify-between items-center">
-                                <span></span>
-                                <span className="text-xs bg-slate-700 px-2 py-1 rounded text-cyan-300"></span>
-                            </h3>
-                        </div>
-                    </div>
-
-                    {/* CONFIG PANEL */}
-                    <div className="w-[300px] bg-slate-800 rounded-xl border border-slate-600 p-6 text-white shadow-2xl flex flex-col gap-6">
-                        <h2 className="text-2xl font-bold text-center text-yellow-400 border-b border-slate-600 pb-4">
-                            🎰 Config
-                        </h2>
-
-                        {/* Setting Selection */}
-                        <div>
-                            <label className="block text-slate-400 mb-3 font-semibold text-sm">Game Setting (Start Value)</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                {[1, 2, 3, 4, 5, 6].map(num => (
-                                    <button
-                                        key={num}
-                                        onClick={() => { soundManager.playClick(); setSetting(num); }}
-                                        className={`
-                                        py-3 rounded-lg font-black text-xl transition-all
-                                        ${setting === num
-                                                ? 'bg-gradient-to-br from-pink-500 to-red-600 shadow-[0_0_15px_red] scale-105'
-                                                : 'bg-slate-700 hover:bg-slate-600 text-slate-400'}
-                                    `}
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Stats Table */}
-                        <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                            <h3 className="text-xs text-slate-400 mb-3 uppercase tracking-wider text-center font-bold">Probability Stats (Set {setting})</h3>
-                            <div className="space-y-3 text-sm">
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-blue-400 font-bold">BB Prob</span>
-                                    <span className="font-mono text-white">{ODDS[setting].bb}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-green-400 font-bold">RB Prob</span>
-                                    <span className="font-mono text-white">{ODDS[setting].rb}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-purple-400 font-bold">Bonus Sum</span>
-                                    <span className="font-mono text-white">{ODDS[setting].total}</span>
-                                </div>
-                                <div className="flex justify-between pt-1">
-                                    <span className="text-yellow-400 font-bold">Payout</span>
-                                    <span className="font-mono text-yellow-200">{ODDS[setting].payout}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="text-[10px] text-slate-500 text-center mt-auto">
-                            * Based on standard Juggler mechanics
-                        </div>
-                    </div>
-                </div>
+                )}
 
             </div>
         </div>
