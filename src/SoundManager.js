@@ -160,39 +160,41 @@ class SoundManager {
         osc.stop(now + 0.15);
     }
 
-    // Metallic Coin Clink (Single Coin)
+    // Metallic Coin Clink (Heavier "Clatter")
     playMetallicClink() {
         this.init();
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
-        // Random base frequency for variety (2kHz - 3kHz)
-        const base = 2200 + Math.random() * 800;
+        // Lower base frequency for weight (800Hz - 1200Hz)
+        const base = 800 + Math.random() * 400;
 
-        // Inharmonic partials for metallic sound
-        // Metal usually has non-integer multiples
-        const ratios = [1, 1.6, 2.4, 3.1];
+        const partials = [
+            { ratio: 1.0, type: 'triangle', vol: 0.3, decay: 0.08 }, // Body (Thud/Clack)
+            { ratio: 1.6, type: 'sine', vol: 0.2, decay: 0.15 }, // Resonance
+            { ratio: 2.8, type: 'sine', vol: 0.1, decay: 0.2 }, // Ring
+            { ratio: 4.2, type: 'sine', vol: 0.05, decay: 0.25 } // Sparkle
+        ];
 
-        ratios.forEach((ratio, idx) => {
+        partials.forEach((p) => {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
 
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(base * ratio, now);
+            osc.type = p.type;
+            osc.frequency.setValueAtTime(base * p.ratio, now);
 
-            // Decays
-            const duration = 0.1 + Math.random() * 0.1; // Short "ting"
-            const vol = 0.1 / (idx + 1); // Lower volume for higher partials
+            // Random micro-detuining for "loose" sound
+            osc.detune.setValueAtTime((Math.random() - 0.5) * 50, now);
 
             gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(vol, now + 0.005); // Fast attack
-            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            gain.gain.linearRampToValueAtTime(p.vol, now + 0.005);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + p.decay);
 
             osc.connect(gain);
             gain.connect(this.ctx.destination);
 
             osc.start();
-            osc.stop(now + duration + 0.05);
+            osc.stop(now + p.decay + 0.05);
         });
     }
 
