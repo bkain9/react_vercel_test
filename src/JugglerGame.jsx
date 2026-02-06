@@ -715,7 +715,7 @@ export default function JugglerGame() {
                 {/* DATA COUNTER (Mobile Layout) - MAX UPSCALE WIDTH MATCHED */}
                 <div
                     className="bg-gradient-to-b from-neutral-800 to-neutral-900 rounded-xl border-2 border-slate-600 p-2 text-white shadow-2xl mb-2 shrink-0"
-                    style={{ width: `${imgSize.w}px` }}
+                    style={{ width: `${imgSize.w}px`, fontSize: '24px', fontWeight: 'bold' }}
                 >
                     <div className="bg-black rounded-lg p-4 mb-2 flex justify-between items-center relative overflow-hidden border border-slate-700">
                         <div className="relative z-10 flex flex-col items-center w-full">
@@ -741,17 +741,8 @@ export default function JugglerGame() {
 
                     {/* Main Counter */}
                     <div className="bg-black/50 rounded p-6 flex flex-col items-center justify-center border border-slate-700">
-                        <span className="text-xl text-yellow-500 font-bold mb-1">CURRENT SPINS</span>
-                        <span className="text-8xl font-['Digital-7'] text-yellow-400 drop-shadow-[0_0_10px_orange] leading-none">
-                            {currentSpins}
-                        </span>
-                    </div>
-
-                    {/* Probability */}
-                    <div className="mt-2 text-center">
-                        <span className="text-sm text-slate-500">
-                            Total Prob: 1 / {totalSpins > 0 ? (totalSpins / (bbCount + rbCount || 1)).toFixed(1) : '-'}
-                        </span>
+                        <span className="text-xl text-yellow-500 font-bold mb-1">CURRENT SPINS : {currentSpins}</span>
+                        <span className="text-sm text-slate-500">Total Prob: 1 / {totalSpins > 0 ? (totalSpins / (bbCount + rbCount || 1)).toFixed(1) : '-'}</span>
                     </div>
                 </div>
 
@@ -924,17 +915,20 @@ export default function JugglerGame() {
                     className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-row items-center justify-between px-4 py-3 shadow-2xl"
                     style={{
                         width: `${imgSize.w}px`, // Match machine width
-                        marginTop: '-10px', // Adjust overlap
+                        height: '60px',
+                        marginTop: '0', // Adjust overlap
+                        fontSize: '24px',
+                        fontWeight: 'bold',
                         zIndex: 5
                     }}
                 >
                     {/* CENTER: COIN DISPLAY (Single Line) */}
-                    <div className="flex-1 flex items-center justify-start pl-2 gap-3">
-                        <span className="text-gray-500 text-sm font-bold tracking-widest whitespace-nowrap">MY COINS :</span>
+                    <div className="flex-1 flex items-center justify-center pl-2 gap-3">
+                        <span className="text-gray-500 text-sm font-bold tracking-widest whitespace-nowrap">MY COINS :&nbsp;</span>
                         <span className="text-3xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_10px_rgba(234,179,8,0.6)] leading-none">
                             {coins.toLocaleString()}
                         </span>
-                        <span className="text-yellow-700 text-lg font-bold leading-none">EA</span>
+                        <span className="text-yellow-700 text-lg font-bold leading-none">&nbsp;EA</span>
                     </div>
 
                     {/* RIGHT: BUTTON */}
@@ -942,6 +936,7 @@ export default function JugglerGame() {
                         onClick={handleChargeCoins}
                         disabled={isCharging}
                         className={`shrink-0 bg-green-600 hover:bg-green-500 text-white text-lg font-bold py-3 px-6 rounded-lg shadow-[0_3px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[3px] transition-all border border-green-700 mr-[10px] ${isCharging ? 'opacity-50 cursor-not-allowed' : 'animate-pulse-slow'}`}
+                        style={{ height: '40px', fontSize: '20px', backgroundColor: 'green' }}
                     >
                         {isCharging ? '...' : 'CHARGE'}
                     </button>
@@ -949,8 +944,11 @@ export default function JugglerGame() {
 
                 {/* CONFIG MODAL */}
                 {showConfig && (
-                    <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
-                        <div className="w-full max-w-[350px] bg-neutral-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative">
+                    <div className="fixed inset-0 z-[100] bg-black h-[100dvh] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
+                        <div
+                            className="w-full max-w-[400px] bg-neutral-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative"
+                            style={{ zIndex: 100, backgroundColor: 'black', fontSize: '24px', padding: '10px' }}
+                        >
                             <button
                                 onClick={() => setShowConfig(false)}
                                 className="absolute top-2 right-2 p-2 text-slate-400 hover:text-white"
@@ -980,14 +978,33 @@ export default function JugglerGame() {
                                 </div>
                             </div>
 
-                            <div className="bg-slate-900 rounded p-3 text-xs text-slate-400 text-center">
-                                Triple Tap Bottom Machine Area to Open
+                            {/* Stats Table */}
+                            <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                                <h3 className="text-xs text-slate-400 mb-3 uppercase tracking-wider text-center font-bold">Probability Stats (Set {setting})</h3>
+                                <div className="space-y-3 text-sm">
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-blue-400 font-bold">BB Prob</span>
+                                        <span className="font-mono text-white">{ODDS[setting].bb}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-green-400 font-bold">RB Prob</span>
+                                        <span className="font-mono text-white">{ODDS[setting].rb}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-purple-400 font-bold">Bonus Sum</span>
+                                        <span className="font-mono text-white">{ODDS[setting].total}</span>
+                                    </div>
+                                    <div className="flex justify-between pt-1">
+                                        <span className="text-yellow-400 font-bold">Payout</span>
+                                        <span className="font-mono text-yellow-200">{ODDS[setting].payout}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
 
             </div>
-        </div>
+        </div >
     );
 }
