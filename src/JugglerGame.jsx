@@ -658,6 +658,12 @@ export default function JugglerGame() {
                 setBet(0); // Bet consumed even on loss
             }
 
+            // --- ATO-GOGO (Post-Spin Lamp) ---
+            if (!bonusWon && stateRef.current.bonusFlag && gogoState !== 'ON') {
+                setGogoState('ON');
+                soundManager.playWin();
+            }
+
             if (newHighlights.length > 0) {
                 setWinHighlights(newHighlights);
                 setTimeout(() => setWinHighlights([]), 2000);
