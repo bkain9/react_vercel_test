@@ -160,29 +160,51 @@ class SoundManager {
         osc.stop(now + 0.15);
     }
 
-    // Coin Drop / Overflow Sound
+    // Metallic Coin Clink (Single Coin)
+    playMetallicClink() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        // Random base frequency for variety (2kHz - 3kHz)
+        const base = 2200 + Math.random() * 800;
+
+        // Inharmonic partials for metallic sound
+        // Metal usually has non-integer multiples
+        const ratios = [1, 1.6, 2.4, 3.1];
+
+        ratios.forEach((ratio, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(base * ratio, now);
+
+            // Decays
+            const duration = 0.1 + Math.random() * 0.1; // Short "ting"
+            const vol = 0.1 / (idx + 1); // Lower volume for higher partials
+
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(vol, now + 0.005); // Fast attack
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start();
+            osc.stop(now + duration + 0.05);
+        });
+    }
+
+    // Coin Drop (Multiple Clinks / Overflow)
     playCoinDrop() {
         this.init();
-        const count = 5; // Simluate 5 coins clinking
+        // Simulate a small handful dropping
+        const count = 4;
         for (let i = 0; i < count; i++) {
             setTimeout(() => {
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-
-                osc.type = 'sine'; // Metal ring
-                // Random high pitch 2000-4000Hz
-                osc.frequency.setValueAtTime(2000 + Math.random() * 2000, now);
-
-                gain.gain.setValueAtTime(0.1, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1); // Short ting
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(now + 0.15);
-            }, i * 80); // Stagger by 80ms
+                this.playMetallicClink();
+            }, i * 60); // Rapid stagger
         }
     }
 

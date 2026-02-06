@@ -237,12 +237,9 @@ export default function JugglerGame() {
             setCoins(c => c + 1);
             // Play a shorter/quieter coin sound for rapid fire
             // We can reuse playInsertCoin or a new sound. 
-            // User asked for "Coin Piling Sound"
-            soundManager.playInsertCoin(); // Thud is too heavy? Maybe playCoinDrop?
-            // "Coin piling up sound" -> Let's use playCoinDrop trigger or a specialized sound.
-            // Using playTone for 'clink' might be better for rapid fire.
-            // Let's use a quick high pitch ping.
-            soundManager.playTone(2000 + Math.random() * 500, 0.05, 'square', 0.05);
+            // "Coin piling up sound" - Heavy metallic clinking
+            // We use the new playMetallicClink() which has partials
+            soundManager.playMetallicClink();
 
             count++;
             if (count >= 50) clearInterval(interval);
@@ -328,14 +325,11 @@ export default function JugglerGame() {
             }
 
             if (overflow > 0) {
-                // Play Overflow Sound
-                soundManager.playCoinDrop();
-
                 // Animate Overflow into Coins
                 let outCount = 0;
                 const intervalOut = setInterval(() => {
                     setCoins(c => c + 1);
-                    // soundManager.playTone(2500, 0.05, 'sine', 0.05); // Ting
+                    soundManager.playMetallicClink(); // Clink for every coin
                     outCount++;
                     if (outCount >= overflow) clearInterval(intervalOut);
                 }, 50);
