@@ -1008,7 +1008,24 @@ export default function JugglerGame() {
                                     {[1, 2, 3, 4, 5, 6].map(num => (
                                         <button
                                             key={num}
-                                            onClick={() => { soundManager.playClick(); setSetting(num); }}
+                                            onClick={() => {
+                                                soundManager.playClick();
+                                                setSetting(num);
+                                                // Reset Game State ("New Game")
+                                                setGogoState('OFF');
+                                                setBonusFlag(null);
+                                                setBonusStage(null);
+                                                setBet(0);
+                                                setPayout(0);
+                                                setCredits(50);
+                                                setWinHighlights([]);
+                                                setCoins(0);
+                                                // Reset Stats
+                                                setCurrentSpins(0);
+                                                setTotalSpins(0);
+                                                setBbCount(0);
+                                                setRbCount(0);
+                                            }}
                                             style={{ fontSize: '30px', height: '60px' }}
                                             className={`
                                             py-3 rounded-lg font-black text-xl transition-all
