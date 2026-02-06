@@ -721,6 +721,7 @@ export default function JugglerGame() {
                         <div className="relative z-10 flex flex-col items-center w-full">
                             <span className="text-lg text-red-500 font-bold tracking-widest mb-1">DATA COUNTER</span>
                             <div className="flex justify-between w-full px-12 mt-1">
+                                <div className="flex flex-col items-center"></div>
                                 <div className="flex flex-col items-center">
                                     <span className="text-xl font-bold text-slate-400">BIG</span>
                                     <span className="text-6xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
@@ -733,6 +734,7 @@ export default function JugglerGame() {
                                     <span className="text-xl font-bold text-slate-400">TOTAL</span>
                                     <span className="text-5xl font-['Digital-7'] text-white">{totalSpins}</span>
                                 </div>
+                                <div className="flex flex-col items-center"></div>
                             </div>
                         </div>
                     </div>
@@ -926,22 +928,20 @@ export default function JugglerGame() {
                         zIndex: 5
                     }}
                 >
-                    {/* CENTER: COIN DISPLAY */}
-                    <div className="flex-1 flex flex-col items-center justify-center -ml-4">
-                        <span className="text-gray-500 text-xs font-bold tracking-widest leading-none mb-1">MY COINS</span>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-4xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_10px_rgba(234,179,8,0.6)] leading-none">
-                                {coins.toLocaleString()}
-                            </span>
-                            <span className="text-yellow-700 text-lg font-bold leading-none">EA</span>
-                        </div>
+                    {/* CENTER: COIN DISPLAY (Single Line) */}
+                    <div className="flex-1 flex items-center justify-start pl-2 gap-3">
+                        <span className="text-gray-500 text-sm font-bold tracking-widest whitespace-nowrap">MY COINS :</span>
+                        <span className="text-3xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_10px_rgba(234,179,8,0.6)] leading-none">
+                            {coins.toLocaleString()}
+                        </span>
+                        <span className="text-yellow-700 text-lg font-bold leading-none">EA</span>
                     </div>
 
                     {/* RIGHT: BUTTON */}
                     <button
                         onClick={handleChargeCoins}
                         disabled={isCharging}
-                        className={`shrink-0 bg-green-600 hover:bg-green-500 text-white text-lg font-bold py-3 px-6 rounded-lg shadow-[0_3px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[3px] transition-all border border-green-700 ${isCharging ? 'opacity-50 cursor-not-allowed' : 'animate-pulse-slow'}`}
+                        className={`shrink-0 bg-green-600 hover:bg-green-500 text-white text-lg font-bold py-3 px-6 rounded-lg shadow-[0_3px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[3px] transition-all border border-green-700 mr-[10px] ${isCharging ? 'opacity-50 cursor-not-allowed' : 'animate-pulse-slow'}`}
                     >
                         {isCharging ? '...' : 'CHARGE'}
                     </button>
@@ -949,8 +949,8 @@ export default function JugglerGame() {
 
                 {/* CONFIG MODAL */}
                 {showConfig && (
-                    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
-                        <div className="w-full max-w-[350px] bg-slate-800 rounded-xl border border-slate-600 p-6 text-white shadow-2xl flex flex-col gap-6 relative animate-pulse-once">
+                    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
+                        <div className="w-full max-w-[350px] bg-slate-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative animate-pulse-once">
                             <button
                                 onClick={() => setShowConfig(false)}
                                 className="absolute top-2 right-2 p-2 text-slate-400 hover:text-white"
