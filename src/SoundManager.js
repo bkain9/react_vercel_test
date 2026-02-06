@@ -6,14 +6,53 @@ class SoundManager {
         this.fanfareInterval = null;
         this.fanfareOscillators = [];
         this.isMuted = false;
+        this.coinBuffer = null;
     }
 
     init() {
         if (!this.ctx) {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.loadCoinSound();
         }
         if (this.ctx.state === 'suspended') {
             this.ctx.resume();
+        }
+    }
+
+    async loadCoinSound() {
+        try {
+            const response = await fetch('/coins_drop.wav');
+            const arrayBuffer = await response.arrayBuffer();
+            this.coinBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+        } catch (e) {
+            console.error("Failed to load coin sound", e);
+        }
+    }
+
+    // ... (keep helper methods like playTone) ...
+
+    // Metallic Coin Clink (Sample Based)
+    playMetallicClink() {
+        this.init();
+        if (!this.ctx) return;
+
+        if (this.coinBuffer) {
+            const source = this.ctx.createBufferSource();
+            source.buffer = this.coinBuffer;
+
+            // Variate pitch slightly for realism (0.9 to 1.1)
+            source.playbackRate.value = 0.9 + Math.random() * 0.2;
+
+            const gain = this.ctx.createGain();
+            // Randomize volume slightly
+            gain.gain.value = 0.3 + Math.random() * 0.2;
+
+            source.connect(gain);
+            gain.connect(this.ctx.destination);
+            source.start(0);
+        } else {
+            // Fallback if not loaded yet (use simple tone)
+            this.playTone(1200, 0.05, 'triangle', 0.1);
         }
     }
 
@@ -160,42 +199,29 @@ class SoundManager {
         osc.stop(now + 0.15);
     }
 
-    // Metallic Coin Clink (Heavier "Clatter")
+    // Metallic Coin Clink (Sample Based)
     playMetallicClink() {
         this.init();
         if (!this.ctx) return;
-        const now = this.ctx.currentTime;
 
-        // Lower base frequency for weight (800Hz - 1200Hz)
-        const base = 800 + Math.random() * 400;
+        if (this.coinBuffer) {
+            const source = this.ctx.createBufferSource();
+            source.buffer = this.coinBuffer;
 
-        const partials = [
-            { ratio: 1.0, type: 'triangle', vol: 0.3, decay: 0.08 }, // Body (Thud/Clack)
-            { ratio: 1.6, type: 'sine', vol: 0.2, decay: 0.15 }, // Resonance
-            { ratio: 2.8, type: 'sine', vol: 0.1, decay: 0.2 }, // Ring
-            { ratio: 4.2, type: 'sine', vol: 0.05, decay: 0.25 } // Sparkle
-        ];
+            // Variate pitch slightly for realism (0.9 to 1.1)
+            source.playbackRate.value = 0.9 + Math.random() * 0.2;
 
-        partials.forEach((p) => {
-            const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
+            // Randomize volume slightly
+            gain.gain.value = 0.3 + Math.random() * 0.2;
 
-            osc.type = p.type;
-            osc.frequency.setValueAtTime(base * p.ratio, now);
-
-            // Random micro-detuining for "loose" sound
-            osc.detune.setValueAtTime((Math.random() - 0.5) * 50, now);
-
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(p.vol, now + 0.005);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + p.decay);
-
-            osc.connect(gain);
+            source.connect(gain);
             gain.connect(this.ctx.destination);
-
-            osc.start();
-            osc.stop(now + p.decay + 0.05);
-        });
+            source.start(0);
+        } else {
+            // Fallback
+            this.playTone(1000, 0.05, 'square', 0.1);
+        }
     }
 
     // Coin Drop (Multiple Clinks / Overflow)
