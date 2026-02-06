@@ -845,6 +845,19 @@ export default function JugglerGame() {
                         </div>
                     </div>
 
+                    {/* Bet Indicator Overlay (64, 316, 38x116) */}
+                    <img
+                        src={`./bet_${bet}.png`}
+                        alt={`Bet ${bet}`}
+                        className="absolute z-20 pointer-events-none"
+                        style={{
+                            left: `${(64 / imgSize.w) * 100}%`,
+                            top: `${(316 / imgSize.h) * 100}%`,
+                            width: `${(38 / imgSize.w) * 100}%`,
+                            height: `${(116 / imgSize.h) * 100}%`
+                        }}
+                    />
+
                     {/* 4. TOUCH CONTROLS (Absolute Positioning) */}
                     {/* Insert (Credits): 438, 506 (90x48) */}
                     <div
@@ -944,10 +957,10 @@ export default function JugglerGame() {
 
                 {/* CONFIG MODAL */}
                 {showConfig && (
-                    <div className="fixed inset-0 z-[100] bg-black h-[100dvh] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
+                    <div className="fixed inset-0 z-[100] bg-black h-[100dvh] w-[80%] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
                         <div
-                            className="w-full max-w-[400px] bg-neutral-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative"
-                            style={{ zIndex: 100, backgroundColor: 'black', fontSize: '24px', padding: '10px' }}
+                            className="w-full max-w-[800px] bg-neutral-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative"
+                            style={{ zIndex: 100, backgroundColor: 'black', fontSize: '26px', padding: '20px' }}
                         >
                             <button
                                 onClick={() => setShowConfig(false)}
@@ -965,6 +978,7 @@ export default function JugglerGame() {
                                         <button
                                             key={num}
                                             onClick={() => { soundManager.playClick(); setSetting(num); }}
+                                            style={{ fontSize: '30px', height: '60px' }}
                                             className={`
                                             py-3 rounded-lg font-black text-xl transition-all
                                             ${setting === num
@@ -980,7 +994,7 @@ export default function JugglerGame() {
 
                             {/* Stats Table */}
                             <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                                <h3 className="text-xs text-slate-400 mb-3 uppercase tracking-wider text-center font-bold">Probability Stats (Set {setting})</h3>
+                                <h3 className="text-xs text-slate-400 mb-3 uppercase tracking-wider text-center font-bold"> Set {setting} Stats</h3>
                                 <div className="space-y-3 text-sm">
                                     <div className="flex justify-between border-b border-slate-800 pb-2">
                                         <span className="text-blue-400 font-bold">BB Prob</span>
