@@ -616,14 +616,26 @@ export default function JugglerGame() {
                 // Actually we should inspect the line. But we know what we stopped. 
                 // Let's use internal check:
                 let type = 'BB';
-                // Check if we hit RB (7-7-BAR)
+
+                // Robust Check: Inspect actual lines for 7-7-BAR (RB)
                 const r0 = getReelSymbols(0, stops[0]);
                 const r1 = getReelSymbols(1, stops[1]);
                 const r2 = getReelSymbols(2, stops[2]);
-                // Simple check: if right reel has BAR in center/top/bottom matched with 7s...
-                // Ideally passing 'isBB' from evaluating loop would be cleaner, but let's re-eval or rely on command.
-                // Reliable way: Check the spinCommand that triggered this.
-                if (spinCommand === 'RB') type = 'RB';
+
+                const checkLines = [
+                    [r0.center, r1.center, r2.center],
+                    [r0.top, r1.top, r2.top],
+                    [r0.bottom, r1.bottom, r2.bottom],
+                    [r0.top, r1.center, r2.bottom],
+                    [r0.bottom, r1.center, r2.top]
+                ];
+
+                for (const line of checkLines) {
+                    if (line[0] === '7' && line[1] === '7' && line[2] === 'BAR') {
+                        type = 'RB';
+                        break;
+                    }
+                }
 
                 // Init Bonus Stage
                 setBonusStage({ type, count: 0 });
@@ -646,7 +658,7 @@ export default function JugglerGame() {
                 if (bonusStage) {
                     const add = totalWin;
                     const nextCount = bonusStage.count + add;
-                    const limit = bonusStage.type === 'BB' ? 280 : 80;
+                    const limit = bonusStage.type === 'BB' ? 280 : 98;
 
                     if (nextCount > limit) {
                         // --- BONUS END ---
@@ -795,15 +807,6 @@ export default function JugglerGame() {
                             height: `${(REEL_SPECS.h / imgSize.h) * 100}%`,
                         }}
                     >
-                        {/* GOGO LAMP */}
-                        <div className="absolute bottom-4 left-4 z-50">
-                            <div className={`w-16 h-12 bg-black rounded transition-all duration-300 flex items-center justify-center 
-                                  ${gogoState === 'ON' ? 'shadow-[0_0_30px_orange] opacity-100' : 'opacity-20 is-grayscale'}
-                              `}>
-                                <span className="text-yellow-500 font-extrabold italic text-xl drop-shadow-[0_0_5px_yellow]">GOGO!</span>
-                            </div>
-                        </div>
-
                         {/* Reels with Calculated % Width for Spacing */}
                         <div className="h-full relative" style={{ width: '30%' }}><Reel id={0} spinning={spinning[0]} stopIndex={stops[0]} windowHeight={REEL_SPECS.h} xOffset={REEL_X_OFFSETS[0]} highlights={winHighlights.filter(h => h.r === 0).map(h => h.i)} /></div>
                         <div className="h-full relative" style={{ width: '30%' }}><Reel id={1} spinning={spinning[1]} stopIndex={stops[1]} windowHeight={REEL_SPECS.h} xOffset={REEL_X_OFFSETS[1]} highlights={winHighlights.filter(h => h.r === 1).map(h => h.i)} /></div>
