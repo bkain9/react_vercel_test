@@ -76,7 +76,7 @@ const Reel = React.memo(function Reel({ id, spinning, stopIndex, windowHeight, x
     // We adjust slightly to ensure no gaps or specific curvature
     const RADIUS = Math.round((ITEM_HEIGHT / 2) / Math.tan(Math.PI / ITEM_COUNT));
 
-    const SPIN_SPEED = 15; // Degrees per frame
+    const SPIN_SPEED = 10; // Degrees per frame
 
     const animate = () => {
         speed.current = SPIN_SPEED;
@@ -857,6 +857,21 @@ export default function JugglerGame() {
                             height: `${(116 / imgSize.h) * 100}%`
                         }}
                     />
+
+                    {/* GOGO CHANCE Overlay (50, 430, 118x107) */}
+                    {gogoState === 'ON' && (
+                        <img
+                            src="./chance.png"
+                            alt="Gogo Chance"
+                            className="absolute z-20 pointer-events-none animate-pulse-fast"
+                            style={{
+                                left: `${(50 / imgSize.w) * 100}%`,
+                                top: `${(430 / imgSize.h) * 100}%`,
+                                width: `${(118 / imgSize.w) * 100}%`,
+                                height: `${(107 / imgSize.h) * 100}%`
+                            }}
+                        />
+                    )}
 
                     {/* 4. TOUCH CONTROLS (Absolute Positioning) */}
                     {/* Insert (Credits): 438, 506 (90x48) */}
