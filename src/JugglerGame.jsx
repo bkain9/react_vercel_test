@@ -949,8 +949,8 @@ export default function JugglerGame() {
 
                 {/* CONFIG MODAL */}
                 {showConfig && (
-                    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
-                        <div className="w-full max-w-[350px] bg-slate-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative animate-pulse-once">
+                    <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
+                        <div className="w-full max-w-[350px] bg-neutral-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative">
                             <button
                                 onClick={() => setShowConfig(false)}
                                 className="absolute top-2 right-2 p-2 text-slate-400 hover:text-white"
