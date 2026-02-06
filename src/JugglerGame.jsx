@@ -270,9 +270,39 @@ export default function JugglerGame() {
 
         soundManager.playClick();
 
-        const currentCredits = stateRef.current.credits;
+        let currentCredits = stateRef.current.credits;
         const currentBet = stateRef.current.bet;
         const currentPayout = stateRef.current.payout;
+
+        // 1. Auto-collect Payout first (if any)
+        if (currentPayout > 0) {
+            const space = 50 - currentCredits;
+            let addToCredit = 0;
+            let overflow = 0;
+
+            if (currentPayout <= space) {
+                addToCredit = currentPayout;
+            } else {
+                addToCredit = Math.max(0, space);
+                overflow = currentPayout - addToCredit;
+            }
+
+            if (addToCredit > 0) {
+                setCredits(c => c + addToCredit);
+                currentCredits += addToCredit; // Update for affordability check
+            }
+
+            if (overflow > 0) {
+                let outCount = 0;
+                const intervalOut = setInterval(() => {
+                    setCoins(c => c + 1);
+                    soundManager.playMetallicClink();
+                    outCount++;
+                    if (outCount >= overflow) clearInterval(intervalOut);
+                }, 70);
+            }
+            setPayout(0);
+        }
 
         // Bonus Stage Bet Limit: Max 2
         if (stateRef.current.bonusStage && targetBet > 2) {
@@ -281,12 +311,11 @@ export default function JugglerGame() {
 
         const cost = targetBet - currentBet;
 
-        // Check affordability
+        // Check affordability (using updated credits)
         if (currentCredits < cost) return;
 
-        // 1. Apply Bet Logic (Immediate)
+        // 2. Apply Bet Logic
         setBet(targetBet);
-        setPayout(0);
         setCredits(c => c - cost);
     };
 
@@ -301,11 +330,35 @@ export default function JugglerGame() {
         soundManager.startSpinSound();
 
         // Auto-collect payout if exists (Standard game only)
-        // Since we now handle payout IMMEDIATELY in useEffect, we don't need to collect it here!
-        // But we might want to clear the 'payout' display if it's still showing the last win.
         if (!stateRef.current.isReplay && stateRef.current.payout > 0) {
+            const currentPayout = stateRef.current.payout;
+            const currentCredits = stateRef.current.credits;
+
+            const space = 50 - currentCredits;
+            let addToCredit = 0;
+            let overflow = 0;
+
+            if (currentPayout <= space) {
+                addToCredit = currentPayout;
+            } else {
+                addToCredit = Math.max(0, space);
+                overflow = currentPayout - addToCredit;
+            }
+
+            if (addToCredit > 0) {
+                setCredits(c => c + addToCredit);
+            }
+
+            if (overflow > 0) {
+                let outCount = 0;
+                const intervalOut = setInterval(() => {
+                    setCoins(c => c + 1);
+                    soundManager.playMetallicClink();
+                    outCount++;
+                    if (outCount >= overflow) clearInterval(intervalOut);
+                }, 70);
+            }
             setPayout(0);
-            // We do NOT add to credits here, because it was already added in useEffect.
         }
 
         // Clean Replay state if it was active
@@ -569,38 +622,8 @@ export default function JugglerGame() {
                     }
                 }
 
-                // --- IMMEDIATE PAYOUT & OVERFLOW LOGIC ---
-                // 1. Calculate how much fits in credit (Max 50)
-                const currentC = stateRef.current.credits; // Use Ref for latest value
-                const space = 50 - currentC;
-
-                let addToCredit = 0;
-                let overflow = 0;
-
-                if (totalWin <= space) {
-                    addToCredit = totalWin;
-                } else {
-                    addToCredit = Math.max(0, space);
-                    overflow = totalWin - addToCredit;
-                }
-
-                // 2. Add to Credit (Immediate)
-                if (addToCredit > 0) {
-                    setCredits(c => c + addToCredit);
-                }
-
-                // 3. Overflow to Coins (Animated)
-                if (overflow > 0) {
-                    let outCount = 0;
-                    const intervalOut = setInterval(() => {
-                        setCoins(c => c + 1);
-                        soundManager.playMetallicClink();
-                        outCount++;
-                        if (outCount >= overflow) clearInterval(intervalOut);
-                    }, 70);
-                }
-
-                // Set payout for display only (don't rely on it for logic)
+                // --- PAYOUT DISPLAY ---
+                // We do NOT add to credits immediately. User must Bet or Pull Lever to collect.
                 setPayout(totalWin);
                 setBet(0); // Bet consumed
 
