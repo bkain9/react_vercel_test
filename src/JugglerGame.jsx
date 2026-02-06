@@ -832,31 +832,32 @@ export default function JugglerGame() {
 
                 {/* COIN BOX (Under Machine) */}
                 <div
-                    className="absolute bg-black border-4 border-neutral-800 rounded-b-xl flex items-center justify-between px-6 py-4 shadow-2xl"
+                    className="absolute bg-black border-4 border-neutral-800 rounded-b-xl flex flex-row items-center justify-between px-6 shadow-2xl"
                     style={{
                         top: '100%',
+                        left: 0,
                         width: `${imgSize.w}px`, // Match machine width
-                        height: '100px', // Fixed height
-                        marginTop: '-20px', // Slight overlap or gap adjustment
+                        height: '70px', // Reduced height
+                        marginTop: '-10px', // Adjust overlap
                         zIndex: 5
                     }}
                 >
-                    <div className="flex flex-col">
-                        <span className="text-gray-400 text-xs font-bold tracking-widest mb-1">MY COINS</span>
+                    <div className="flex items-center gap-4">
+                        <span className="text-gray-400 text-sm font-bold tracking-widest">MY COINS :</span>
                         <div className="flex items-center gap-2">
-                            <span className="text-4xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
+                            <span className="text-3xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
                                 {coins.toLocaleString()}
                             </span>
-                            <span className="text-yellow-700 text-sm">EA</span>
+                            <span className="text-yellow-700 text-xs">EA</span>
                         </div>
                     </div>
 
                     <button
                         onClick={handleChargeCoins}
                         disabled={isCharging}
-                        className={`bg-green-500 hover:bg-green-400 text-black font-bold py-3 px-6 rounded-lg shadow-[0_4px_0_rgb(21,128,61)] active:shadow-none active:translate-y-[4px] transition-all border-2 border-green-600 ${isCharging ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded shadow-[0_3px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[3px] transition-all border border-green-700 ${isCharging ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        {isCharging ? 'CHARGING...' : 'CHARGE (+50)'}
+                        {isCharging ? '...' : 'CHARGE (+50)'}
                     </button>
                 </div>
 
