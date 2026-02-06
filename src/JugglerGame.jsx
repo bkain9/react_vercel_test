@@ -216,8 +216,8 @@ export default function JugglerGame() {
     useEffect(() => {
         const handleResize = () => {
             // Fit to screen (Max height 90vh, Max width 95vw)
-            // Vertical Layout: Machine Height + Counter (~120px) + CoinBox (~auto) + Gaps
-            const totalH = imgSize.h + 340;
+            // Vertical Layout: Machine Height + Counter (~120px) + CoinBox (~80px) + Gaps
+            const totalH = imgSize.h + 260;
             const hRatio = (window.innerHeight * 0.95) / totalH;
 
             // Width: Just machine width (plus margins)
@@ -917,31 +917,33 @@ export default function JugglerGame() {
 
                 </div>
 
-                {/* COIN BOX (Under Machine) - MAX UPSCALE TIGHTENED */}
+                {/* COIN BOX (Under Machine) - ROW LAYOUT */}
                 <div
-                    className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-col items-center justify-center gap-2 px-6 py-6 shadow-2xl"
+                    className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-row items-center justify-between px-4 py-3 shadow-2xl"
                     style={{
                         width: `${imgSize.w}px`, // Match machine width
                         marginTop: '-10px', // Adjust overlap
                         zIndex: 5
                     }}
                 >
-                    <div className="flex flex-col items-center gap-0">
-                        <span className="text-gray-400 text-3xl font-bold tracking-widest">MY COINS</span>
-                        <div className="flex items-center gap-4">
-                            <span className="text-8xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_20px_rgba(234,179,8,0.8)] leading-none">
+                    {/* CENTER: COIN DISPLAY */}
+                    <div className="flex-1 flex flex-col items-center justify-center -ml-4">
+                        <span className="text-gray-500 text-xs font-bold tracking-widest leading-none mb-1">MY COINS</span>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-4xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_10px_rgba(234,179,8,0.6)] leading-none">
                                 {coins.toLocaleString()}
                             </span>
-                            <span className="text-yellow-700 text-4xl font-bold mt-4 leading-none">EA</span>
+                            <span className="text-yellow-700 text-lg font-bold leading-none">EA</span>
                         </div>
                     </div>
 
+                    {/* RIGHT: BUTTON */}
                     <button
                         onClick={handleChargeCoins}
                         disabled={isCharging}
-                        className={`bg-green-600 hover:bg-green-500 text-white text-4xl font-bold py-5 px-20 rounded-2xl shadow-[0_6px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[6px] transition-all border-2 border-green-700 ${isCharging ? 'opacity-50 cursor-not-allowed' : 'animate-pulse-slow'}`}
+                        className={`shrink-0 bg-green-600 hover:bg-green-500 text-white text-lg font-bold py-3 px-6 rounded-lg shadow-[0_3px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[3px] transition-all border border-green-700 ${isCharging ? 'opacity-50 cursor-not-allowed' : 'animate-pulse-slow'}`}
                     >
-                        {isCharging ? 'Waiting...' : 'CHARGE (+50)'}
+                        {isCharging ? '...' : 'CHARGE'}
                     </button>
                 </div>
 
