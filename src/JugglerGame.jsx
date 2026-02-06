@@ -218,11 +218,11 @@ export default function JugglerGame() {
             // Fit to screen (Max height 90vh, Max width 95vw)
             // Vertical Layout: Machine Height + Counter (~120px) + CoinBox (~80px) + Gaps
             const totalH = imgSize.h + 260;
-            const hRatio = (window.innerHeight * 0.95) / totalH;
+            const hRatio = (window.innerHeight) / totalH;
 
             // Width: Just machine width (plus margins)
-            const totalW = imgSize.w + 40;
-            const wRatio = (window.innerWidth * 0.95) / totalW;
+            const totalW = imgSize.w + 20;
+            const wRatio = (window.innerWidth) / totalW;
 
             setScale(Math.min(wRatio, hRatio));
         };
@@ -703,7 +703,7 @@ export default function JugglerGame() {
     // I MUST ADD credits/payout to stateRef to use them in the Ref-based handler.
 
     return (
-        <div className="w-screen h-screen bg-neutral-900 flex items-start justify-center overflow-hidden pt-[10px]">
+        <div className="w-screen h-screen bg-neutral-900 flex items-start justify-center overflow-hidden pt-[20px]">
 
             <div
                 className="flex flex-col items-center justify-start gap-4"
