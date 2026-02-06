@@ -216,8 +216,8 @@ export default function JugglerGame() {
     useEffect(() => {
         const handleResize = () => {
             // Fit to screen (Max height 90vh, Max width 95vw)
-            // Vertical Layout: Machine Height + Counter (~80px) + CoinBox (~140px) + Gaps
-            const totalH = imgSize.h + 300;
+            // Vertical Layout: Machine Height + Counter (~100px) + CoinBox (~160px) + Gaps
+            const totalH = imgSize.h + 340;
             const hRatio = (window.innerHeight * 0.95) / totalH;
 
             // Width: Just machine width (plus margins)
@@ -689,7 +689,6 @@ export default function JugglerGame() {
     }, [credits, payout, bet]); // Add dependecies for closure? 
     // Actually handleBetChange uses state variables from closure if defined inside component.
     // Better to use stateRef inside handleBetChange or ensure useEffect updates.
-    // Since handleBetChange is inside, we need to bind useEffect to [credits, payout, bet] OR use stateRef consistently.
     // I switched handleBetChange to use 'credits' state directly. 
     // Wait, 'handleKey' is verified once [] with listener. This captures stale state!
     // FIX: Use ref for everything inside handleKey or handleBetChange.
@@ -713,26 +712,41 @@ export default function JugglerGame() {
                     transformOrigin: 'top center',
                 }}
             >
-                {/* DATA COUNTER (Mobile Layout) */}
-                <div className="w-[300px] bg-gradient-to-b from-neutral-800 to-neutral-900 rounded-xl border-2 border-slate-600 p-1 text-white shadow-2xl mb-2 shrink-0">
+                {/* DATA COUNTER (Mobile Layout) - UPSCALED 2X */}
+                <div className="w-[380px] bg-gradient-to-b from-neutral-800 to-neutral-900 rounded-xl border-2 border-slate-600 p-2 text-white shadow-2xl mb-2 shrink-0">
                     <div className="bg-black rounded-lg p-3 mb-2 flex justify-between items-center relative overflow-hidden border border-slate-700">
                         <div className="relative z-10 flex flex-col items-center w-full">
                             <span className="text-xs text-red-500 font-bold tracking-widest mb-1">DATA COUNTER</span>
-                            <div className="flex justify-between w-full px-2 mt-1">
+                            <div className="flex justify-between w-full px-4 mt-1">
                                 <div className="flex flex-col items-center">
-                                    <span className="text-sm font-bold text-slate-400">BIG</span>
-                                    <span className="text-3xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
+                                    <span className="text-lg font-bold text-slate-400">BIG</span>
+                                    <span className="text-5xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <span className="text-sm font-bold text-slate-400">REG</span>
-                                    <span className="text-3xl font-['Digital-7'] text-green-500 drop-shadow-[0_0_5px_green]">{rbCount}</span>
+                                    <span className="text-lg font-bold text-slate-400">REG</span>
+                                    <span className="text-5xl font-['Digital-7'] text-green-500 drop-shadow-[0_0_5px_green]">{rbCount}</span>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <span className="text-sm font-bold text-slate-400">TOTAL</span>
-                                    <span className="text-2xl font-['Digital-7'] text-white">{totalSpins}</span>
+                                    <span className="text-lg font-bold text-slate-400">TOTAL</span>
+                                    <span className="text-4xl font-['Digital-7'] text-white">{totalSpins}</span>
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Main Counter */}
+                    <div className="bg-black/50 rounded p-4 flex flex-col items-center justify-center border border-slate-700">
+                        <span className="text-sm text-yellow-500 font-bold mb-1">CURRENT SPINS</span>
+                        <span className="text-7xl font-['Digital-7'] text-yellow-400 drop-shadow-[0_0_10px_orange] leading-none">
+                            {currentSpins}
+                        </span>
+                    </div>
+
+                    {/* Probability */}
+                    <div className="mt-2 text-center">
+                        <span className="text-xs text-slate-500">
+                            Total Prob: 1 / {totalSpins > 0 ? (totalSpins / (bbCount + rbCount || 1)).toFixed(1) : '-'}
+                        </span>
                     </div>
                 </div>
 
@@ -900,30 +914,30 @@ export default function JugglerGame() {
 
                 </div>
 
-                {/* COIN BOX (Under Machine) - UPSCALE UI */}
+                {/* COIN BOX (Under Machine) - UPSCALE UI 2X */}
                 <div
                     className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-col items-center justify-center gap-4 px-6 shadow-2xl"
                     style={{
                         width: `${imgSize.w}px`, // Match machine width
-                        height: '140px', // Increased height
+                        height: '160px', // Increased height
                         marginTop: '-10px', // Adjust overlap
                         zIndex: 5
                     }}
                 >
                     <div className="flex flex-col items-center gap-0">
-                        <span className="text-gray-400 text-lg font-bold tracking-widest">MY COINS</span>
-                        <div className="flex items-center gap-3">
-                            <span className="text-5xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_15px_rgba(234,179,8,0.6)]">
+                        <span className="text-gray-400 text-2xl font-bold tracking-widest">MY COINS</span>
+                        <div className="flex items-center gap-4">
+                            <span className="text-7xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_15px_rgba(234,179,8,0.6)]">
                                 {coins.toLocaleString()}
                             </span>
-                            <span className="text-yellow-700 text-xl font-bold mt-2">EA</span>
+                            <span className="text-yellow-700 text-3xl font-bold mt-4">EA</span>
                         </div>
                     </div>
 
                     <button
                         onClick={handleChargeCoins}
                         disabled={isCharging}
-                        className={`bg-green-600 hover:bg-green-500 text-white text-xl font-bold py-3 px-12 rounded-lg shadow-[0_4px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[4px] transition-all border-2 border-green-700 ${isCharging ? 'opacity-50 cursor-not-allowed' : 'animate-pulse-slow'}`}
+                        className={`bg-green-600 hover:bg-green-500 text-white text-3xl font-bold py-4 px-16 rounded-xl shadow-[0_5px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[5px] transition-all border-2 border-green-700 ${isCharging ? 'opacity-50 cursor-not-allowed' : 'animate-pulse-slow'}`}
                     >
                         {isCharging ? 'Waiting...' : 'CHARGE (+50)'}
                     </button>
