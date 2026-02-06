@@ -704,14 +704,13 @@ export default function JugglerGame() {
     // I MUST ADD credits/payout to stateRef to use them in the Ref-based handler.
 
     return (
-        <div className="w-screen h-screen bg-neutral-900 flex items-center justify-center overflow-hidden">
+        <div className="w-screen h-screen bg-neutral-900 flex items-start justify-center overflow-hidden pt-[10px]">
 
             <div
                 className="flex flex-col items-center justify-start gap-4"
                 style={{
                     transform: `scale(${scale})`,
                     transformOrigin: 'top center',
-                    marginTop: '20px'
                 }}
             >
                 {/* DATA COUNTER (Mobile Layout) */}
