@@ -216,8 +216,8 @@ export default function JugglerGame() {
     useEffect(() => {
         const handleResize = () => {
             // Fit to screen (Max height 90vh, Max width 95vw)
-            // Vertical Layout: Machine Height + Counter (approx 80px) + CoinBox (80px) + Gaps
-            const totalH = imgSize.h + 200;
+            // Vertical Layout: Machine Height + Counter (~80px) + CoinBox (~140px) + Gaps
+            const totalH = imgSize.h + 300;
             const hRatio = (window.innerHeight * 0.95) / totalH;
 
             // Width: Just machine width (plus margins)
@@ -861,9 +861,15 @@ export default function JugglerGame() {
                     ></div>
 
                     {/* Lever: 128, 580 (54x54) */}
+                    {/* Lever: INCREASED TOUCH AREA (128, 580 origin) -> 100x100 box centered approx */}
                     <div
                         className="absolute z-30 cursor-pointer active:bg-white/20 rounded-full hover:ring-2 hover:ring-yellow-500/50"
-                        style={{ left: `${(128 / imgSize.w) * 100}%`, top: `${(580 / imgSize.h) * 100}%`, width: `${(54 / imgSize.w) * 100}%`, height: `${(54 / imgSize.h) * 100}%` }}
+                        style={{
+                            left: `${(108 / imgSize.w) * 100}%`,
+                            top: `${(560 / imgSize.h) * 100}%`,
+                            width: `${(100 / imgSize.w) * 100}%`,
+                            height: `${(100 / imgSize.h) * 100}%`
+                        }}
                         onClick={pullLever}
                         title="Start Spin"
                     ></div>
@@ -882,9 +888,10 @@ export default function JugglerGame() {
                     ></div>
 
                     {/* Stop Buttons: 222, 578 (186x54) - Flex Container */}
+                    {/* Stop Buttons: INCREASED TOUCH AREA. top 560, height 90 */}
                     <div
                         className="absolute z-30 flex justify-between"
-                        style={{ left: `${(222 / imgSize.w) * 100}%`, top: `${(578 / imgSize.h) * 100}%`, width: `${(186 / imgSize.w) * 100}%`, height: `${(54 / imgSize.h) * 100}%` }}
+                        style={{ left: `${(218 / imgSize.w) * 100}%`, top: `${(560 / imgSize.h) * 100}%`, width: `${(194 / imgSize.w) * 100}%`, height: `${(90 / imgSize.h) * 100}%` }}
                     >
                         <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded" onMouseDown={() => stopReel(0)}></div>
                         <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded mx-1" onMouseDown={() => stopReel(1)}></div>
@@ -893,32 +900,32 @@ export default function JugglerGame() {
 
                 </div>
 
-                {/* COIN BOX (Under Machine) */}
+                {/* COIN BOX (Under Machine) - UPSCALE UI */}
                 <div
-                    className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-row items-center justify-between px-6 shadow-2xl"
+                    className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-col items-center justify-center gap-4 px-6 shadow-2xl"
                     style={{
                         width: `${imgSize.w}px`, // Match machine width
-                        height: '70px', // Reduced height
+                        height: '140px', // Increased height
                         marginTop: '-10px', // Adjust overlap
                         zIndex: 5
                     }}
                 >
-                    <div className="flex items-center gap-4">
-                        <span className="text-gray-400 text-sm font-bold tracking-widest">MY COINS :</span>
-                        <div className="flex items-center gap-2">
-                            <span className="text-3xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
+                    <div className="flex flex-col items-center gap-0">
+                        <span className="text-gray-400 text-lg font-bold tracking-widest">MY COINS</span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-5xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_15px_rgba(234,179,8,0.6)]">
                                 {coins.toLocaleString()}
                             </span>
-                            <span className="text-yellow-700 text-xs">EA</span>
+                            <span className="text-yellow-700 text-xl font-bold mt-2">EA</span>
                         </div>
                     </div>
 
                     <button
                         onClick={handleChargeCoins}
                         disabled={isCharging}
-                        className={`bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded shadow-[0_3px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[3px] transition-all border border-green-700 ${isCharging ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`bg-green-600 hover:bg-green-500 text-white text-xl font-bold py-3 px-12 rounded-lg shadow-[0_4px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[4px] transition-all border-2 border-green-700 ${isCharging ? 'opacity-50 cursor-not-allowed' : 'animate-pulse-slow'}`}
                     >
-                        {isCharging ? '...' : 'CHARGE (+50)'}
+                        {isCharging ? 'Waiting...' : 'CHARGE (+50)'}
                     </button>
                 </div>
 
