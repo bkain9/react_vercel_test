@@ -427,16 +427,26 @@ export default function JugglerGame() {
 
             if (rng < probBB) {
                 setBonusFlag('BB');
-                // Saki-Gogo check (25% chance)
-                if (Math.random() < 0.25) setGogoState('ON');
-                else setGogoState('OFF'); // Atogogo (Silent start)
-                command = 'BB';
+                // Simultaneous Cherry Check (5% chance)
+                if (Math.random() < 0.05) {
+                    command = 'CHERRY';
+                    setGogoState('OFF'); // Light up after spin (Ato-Gogo)
+                } else {
+                    // Standard Bonus flow
+                    if (Math.random() < 0.25) setGogoState('ON'); // Saki
+                    else setGogoState('OFF'); // Ato
+                    command = 'BB';
+                }
             } else if (rng < probBB + probRB) {
                 setBonusFlag('RB');
-                // Saki-Gogo check (25% chance)
-                if (Math.random() < 0.25) setGogoState('ON');
-                else setGogoState('OFF'); // Atogogo (Silent start)
-                command = 'RB';
+                if (Math.random() < 0.05) {
+                    command = 'CHERRY';
+                    setGogoState('OFF');
+                } else {
+                    if (Math.random() < 0.25) setGogoState('ON');
+                    else setGogoState('OFF');
+                    command = 'RB';
+                }
             } else {
                 // 3. Small Win (Grape/Cherry)
                 const probGrape = 1 / 7.3;
@@ -468,16 +478,16 @@ export default function JugglerGame() {
             return null;
         };
 
-        if (cmd === 'BB' || cmd === 'RB' || stateRef.current.bonusFlag) {
-            // Aim for 7 or BAR
-            const target = (cmd === 'RB' && idx === 2) ? ['BAR'] : ['7'];
-            const found = findSymbolInSlip(idx, target, naturalIdx);
-            if (found !== null) finalIdx = found;
-        } else if (cmd === 'GRAPE') {
+        if (cmd === 'GRAPE') {
             const found = findSymbolInSlip(idx, ['🍇'], naturalIdx);
             if (found !== null) finalIdx = found;
         } else if (cmd === 'CHERRY' && idx === 0) {
-            const found = findSymbolInSlip(idx, ['🍒'], naturalIdx);
+            const found = findSymbolInSlip(idx, ['�'], naturalIdx);
+            if (found !== null) finalIdx = found;
+        } else if (cmd === 'BB' || cmd === 'RB' || stateRef.current.bonusFlag) {
+            // Aim for 7 or BAR (Bonus Flag Logic)
+            const target = (cmd === 'RB' && idx === 2) ? ['BAR'] : ['7'];
+            const found = findSymbolInSlip(idx, target, naturalIdx);
             if (found !== null) finalIdx = found;
         } else {
             // MISS: Prevent 7/BAR alignment
@@ -624,7 +634,7 @@ export default function JugglerGame() {
                 else setRbCount(c => c + 1);
                 setCurrentSpins(0); // Reset "Current Spins" counter
 
-                setGogoState('ON'); // Ensure Lamp ON
+                setGogoState('OFF'); // Gogo Lamp OFF when Bonus Starts
                 setBonusFlag(null);
                 setPayout(0); // No instant payout
                 setBet(0);
