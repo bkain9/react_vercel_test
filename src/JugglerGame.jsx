@@ -216,8 +216,8 @@ export default function JugglerGame() {
     useEffect(() => {
         const handleResize = () => {
             // Fit to screen (Max height 90vh, Max width 95vw)
-            // Vertical Layout: Machine Height + Counter (~120px) + CoinBox (~180px) + Gaps
-            const totalH = imgSize.h + 380;
+            // Vertical Layout: Machine Height + Counter (~120px) + CoinBox (~auto) + Gaps
+            const totalH = imgSize.h + 340;
             const hRatio = (window.innerHeight * 0.95) / totalH;
 
             // Width: Just machine width (plus margins)
@@ -720,7 +720,7 @@ export default function JugglerGame() {
                     <div className="bg-black rounded-lg p-4 mb-2 flex justify-between items-center relative overflow-hidden border border-slate-700">
                         <div className="relative z-10 flex flex-col items-center w-full">
                             <span className="text-lg text-red-500 font-bold tracking-widest mb-1">DATA COUNTER</span>
-                            <div className="flex justify-between w-full px-6 mt-1">
+                            <div className="flex justify-between w-full px-12 mt-1">
                                 <div className="flex flex-col items-center">
                                     <span className="text-xl font-bold text-slate-400">BIG</span>
                                     <span className="text-6xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
@@ -917,12 +917,11 @@ export default function JugglerGame() {
 
                 </div>
 
-                {/* COIN BOX (Under Machine) - MAX UPSCALE */}
+                {/* COIN BOX (Under Machine) - MAX UPSCALE TIGHTENED */}
                 <div
-                    className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-col items-center justify-center gap-4 px-6 shadow-2xl"
+                    className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-col items-center justify-center gap-2 px-6 py-6 shadow-2xl"
                     style={{
                         width: `${imgSize.w}px`, // Match machine width
-                        height: '180px', // Increased height
                         marginTop: '-10px', // Adjust overlap
                         zIndex: 5
                     }}
@@ -930,10 +929,10 @@ export default function JugglerGame() {
                     <div className="flex flex-col items-center gap-0">
                         <span className="text-gray-400 text-3xl font-bold tracking-widest">MY COINS</span>
                         <div className="flex items-center gap-4">
-                            <span className="text-8xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_20px_rgba(234,179,8,0.8)]">
+                            <span className="text-8xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_20px_rgba(234,179,8,0.8)] leading-none">
                                 {coins.toLocaleString()}
                             </span>
-                            <span className="text-yellow-700 text-4xl font-bold mt-4">EA</span>
+                            <span className="text-yellow-700 text-4xl font-bold mt-4 leading-none">EA</span>
                         </div>
                     </div>
 
