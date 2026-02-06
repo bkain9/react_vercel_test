@@ -139,6 +139,53 @@ class SoundManager {
         });
     }
 
+    // Metallic Coin Insert Sound
+    playInsertCoin() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        // Heavy Thud (Low Square Wave)
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
+
+        gain.gain.setValueAtTime(0.5, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(now + 0.15);
+    }
+
+    // Coin Drop / Overflow Sound
+    playCoinDrop() {
+        this.init();
+        const count = 5; // Simluate 5 coins clinking
+        for (let i = 0; i < count; i++) {
+            setTimeout(() => {
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine'; // Metal ring
+                // Random high pitch 2000-4000Hz
+                osc.frequency.setValueAtTime(2000 + Math.random() * 2000, now);
+
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1); // Short ting
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.15);
+            }, i * 80); // Stagger by 80ms
+        }
+    }
+
     // Simple melody sequencer
     playFanfare(type) {
         this.stopFanfare();

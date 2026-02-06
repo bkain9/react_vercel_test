@@ -184,6 +184,9 @@ export default function JugglerGame() {
     const [rbCount, setRbCount] = useState(0);
     const [currentSpins, setCurrentSpins] = useState(0);
 
+    // Coin Box State
+    const [coins, setCoins] = useState(0);
+
     // Bonus Stage State: { type: 'BB' | 'RB', count: 0 } or null
     const [bonusStage, setBonusStage] = useState(null);
 
@@ -191,8 +194,8 @@ export default function JugglerGame() {
     const [spinCommand, setSpinCommand] = useState(null);
     const [winHighlights, setWinHighlights] = useState([]);
 
-    const stateRef = useRef({ spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage });
-    useEffect(() => { stateRef.current = { spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage }; }, [spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage]);
+    const stateRef = useRef({ spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage, coins });
+    useEffect(() => { stateRef.current = { spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage, coins }; }, [spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage, coins]);
 
     // Helper: Parse "1/273.1" -> 1/273.1
     const parseRatio = (str) => {
@@ -220,6 +223,31 @@ export default function JugglerGame() {
     // Game Logic
     // Game Logic
     // --- BETTING LOGIC ---
+    const handleBetPlus = () => {
+        // Cycle 1 -> 2 -> 3 -> 1
+        const current = stateRef.current.bet;
+        const next = (current % 3) + 1;
+        handleBetChange(next);
+    }
+
+    const handleChargeCoins = () => {
+        setCoins(c => c + 50);
+        soundManager.playClick();
+    };
+
+    const handleInsertCoin = () => {
+        const currentCoins = stateRef.current.coins;
+        const currentCredits = stateRef.current.credits;
+
+        if (currentCoins <= 0) return; // No coins
+        if (currentCredits >= 50) return; // Max credit limit
+
+        // Execute Insert
+        setCoins(c => c - 1);
+        setCredits(c => c + 1);
+        soundManager.playInsertCoin();
+    };
+
     const handleBetChange = (targetBet) => {
         if (stateRef.current.isPlaying) return;
         if (stateRef.current.isReplay) return; // Prevent bet change during Replay
@@ -270,16 +298,37 @@ export default function JugglerGame() {
         // Auto-collect payout if exists (Standard game only)
         if (!stateRef.current.isReplay && stateRef.current.payout > 0) {
             const p = stateRef.current.payout;
+            const currentC = stateRef.current.credits;
             setPayout(0);
 
-            // Animate Payout
-            let count = 0;
-            const interval = setInterval(() => {
-                setCredits(c => c + 1);
-                soundManager.playCount();
-                count++;
-                if (count >= p) clearInterval(interval);
-            }, 50);
+            // Calculate Overflow
+            const space = 50 - currentC;
+            let addToCredit = 0;
+            let overflow = 0;
+
+            if (p <= space) {
+                addToCredit = p;
+            } else {
+                addToCredit = Math.max(0, space);
+                overflow = p - addToCredit;
+            }
+
+            if (overflow > 0) {
+                // Play Overflow Sound
+                soundManager.playCoinDrop();
+                setCoins(c => c + overflow);
+            }
+
+            // Animate Payout to Credit
+            if (addToCredit > 0) {
+                let count = 0;
+                const interval = setInterval(() => {
+                    setCredits(c => c + 1);
+                    soundManager.playCount();
+                    count++;
+                    if (count >= addToCredit) clearInterval(interval);
+                }, 50);
+            }
         }
 
         // Clean Replay state if it was active
@@ -545,6 +594,30 @@ export default function JugglerGame() {
 
                 setPayout(totalWin);
                 setBet(0); // Bet consumed
+
+                // --- OVERFLOW CHECK (Pay out to Coin Box if Credits > 50) ---
+                // We need to check credits AFTER the payout is added.
+                // However, setCredits is async. 
+                // Logic: Current Credits + Payout. If > 50, put difference in Coins.
+                // Note: Standard Juggler pays out ALL credits if > 50? Or just overflow?
+                // Usually: Max 50 credits. Anything above is paid out.
+                // Let's implement Overflow:
+                // Pre-calculate what 'newCredits' would be
+                const currentCreds = stateRef.current.credits; // Approximate
+                // Actually 'payout' is not added to 'credits' yet. User must 'collect' it or Replay adds it?
+                // In Juggler: Wins are added to Credit if < 50. Else paid out.
+                // My current implementation: 'payout' state sits there until 'pullLever' collects it (Lines 261-274).
+
+                // Let's AUTO-COLLECT Overflow during the Payout Phase in pullLever?
+                // Or handle it here?
+                // Request said: "When receiving payout... if credit > 50, excess goes to coin box".
+                // Since my logic has a 'payout' state, let's modify the auto-collect logic in pullLever OR do it here.
+
+                // Actually, let's do it right here:
+                // If we want to simulate "Direct Payout" for overflow:
+                // But wait, the Payout is stored in 'payout' state.
+                // Let's leave it for now. The user said "When receiving bonus or reward...".
+
             } else {
                 setBet(0); // Bet consumed even on loss
             }
@@ -565,12 +638,7 @@ export default function JugglerGame() {
                 pullLever();
             }
             if (e.key === 'q' || e.key === 'Q') {
-                // Cycle 1 -> 2 -> 3 -> 1
-                // Current logic: handleBetChange calculates diff.
-                // Using current ref value for 'bet'
-                const current = stateRef.current.bet;
-                const next = (current % 3) + 1;
-                handleBetChange(next);
+                handleBetPlus()
             }
             if (e.code === 'Backquote' || e.key === '`') {
                 // MAX BET (3)
@@ -708,17 +776,78 @@ export default function JugglerGame() {
                         </div>
                     </div>
 
-                    {/* 4. TOUCH CONTROLS */}
-                    <div className="absolute bottom-[20%] left-0 w-full h-[15%] z-30 flex">
-                        <div className="flex-1 active:bg-white/20 cursor-pointer" onClick={() => setCredits(c => c - 3)}></div>
-                        <div className="flex-1 active:bg-white/20 cursor-pointer" onClick={pullLever}></div>
-                        <div className="flex-[2] flex">
-                            <div className="flex-1 active:bg-white/20 cursor-pointer" onMouseDown={() => stopReel(0)}></div>
-                            <div className="flex-1 active:bg-white/20 cursor-pointer" onMouseDown={() => stopReel(1)}></div>
-                            <div className="flex-1 active:bg-white/20 cursor-pointer" onMouseDown={() => stopReel(2)}></div>
+                    {/* 4. TOUCH CONTROLS (Absolute Positioning) */}
+                    {/* Insert (Credits): 438, 506 (90x48) */}
+                    <div
+                        className="absolute z-30 cursor-pointer active:bg-white/20 rounded-md hover:ring-2 hover:ring-yellow-500/50"
+                        style={{ left: `${(438 / imgSize.w) * 100}%`, top: `${(506 / imgSize.h) * 100}%`, width: `${(90 / imgSize.w) * 100}%`, height: `${(48 / imgSize.h) * 100}%` }}
+                        onClick={handleInsertCoin}
+                        title="Insert Coin"
+                    ></div>
+
+                    {/* Bet 1 (Plus): 40, 590 (38x38) */}
+                    <div
+                        className="absolute z-30 cursor-pointer active:bg-white/20 rounded-full hover:ring-2 hover:ring-yellow-500/50"
+                        style={{ left: `${(40 / imgSize.w) * 100}%`, top: `${(590 / imgSize.h) * 100}%`, width: `${(38 / imgSize.w) * 100}%`, height: `${(38 / imgSize.h) * 100}%` }}
+                        onClick={handleBetPlus}
+                        title="Bet +1"
+                    ></div>
+
+                    {/* Max Bet: 176, 526 (48x28) */}
+                    <div
+                        className="absolute z-30 cursor-pointer active:bg-white/20 rounded-md hover:ring-2 hover:ring-yellow-500/50"
+                        style={{ left: `${(176 / imgSize.w) * 100}%`, top: `${(526 / imgSize.h) * 100}%`, width: `${(48 / imgSize.w) * 100}%`, height: `${(28 / imgSize.h) * 100}%` }}
+                        onClick={() => handleBetChange(3)}
+                        title="Max Bet"
+                    ></div>
+
+                    {/* Lever: 128, 580 (54x54) */}
+                    <div
+                        className="absolute z-30 cursor-pointer active:bg-white/20 rounded-full hover:ring-2 hover:ring-yellow-500/50"
+                        style={{ left: `${(128 / imgSize.w) * 100}%`, top: `${(580 / imgSize.h) * 100}%`, width: `${(54 / imgSize.w) * 100}%`, height: `${(54 / imgSize.h) * 100}%` }}
+                        onClick={pullLever}
+                        title="Start Spin"
+                    ></div>
+
+                    {/* Stop Buttons: 222, 578 (186x54) - Flex Container */}
+                    <div
+                        className="absolute z-30 flex justify-between"
+                        style={{ left: `${(222 / imgSize.w) * 100}%`, top: `${(578 / imgSize.h) * 100}%`, width: `${(186 / imgSize.w) * 100}%`, height: `${(54 / imgSize.h) * 100}%` }}
+                    >
+                        <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded" onMouseDown={() => stopReel(0)}></div>
+                        <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded mx-1" onMouseDown={() => stopReel(1)}></div>
+                        <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded" onMouseDown={() => stopReel(2)}></div>
+                    </div>
+
+                </div>
+
+                {/* COIN BOX (Under Machine) */}
+                <div
+                    className="absolute bg-black border-4 border-neutral-800 rounded-b-xl flex items-center justify-between px-6 py-4 shadow-2xl"
+                    style={{
+                        top: '100%',
+                        width: `${imgSize.w}px`, // Match machine width
+                        height: '100px', // Fixed height
+                        marginTop: '-20px', // Slight overlap or gap adjustment
+                        zIndex: 5
+                    }}
+                >
+                    <div className="flex flex-col">
+                        <span className="text-gray-400 text-xs font-bold tracking-widest mb-1">MY COINS</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-4xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">
+                                {coins.toLocaleString()}
+                            </span>
+                            <span className="text-yellow-700 text-sm">EA</span>
                         </div>
                     </div>
 
+                    <button
+                        onClick={handleChargeCoins}
+                        className="bg-green-500 hover:bg-green-400 text-black font-bold py-3 px-6 rounded-lg shadow-[0_4px_0_rgb(21,128,61)] active:shadow-none active:translate-y-[4px] transition-all border-2 border-green-600"
+                    >
+                        CHARGE (+50)
+                    </button>
                 </div>
 
                 {/* SETUP SIDEBAR COLUMN */}
