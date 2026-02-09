@@ -218,7 +218,7 @@ export default function JugglerGame() {
         const handleResize = () => {
             // Fit to screen (Max height 90vh, Max width 95vw)
             // Vertical Layout: Machine Height + Counter (~120px) + CoinBox (~80px) + Gaps
-            const totalH = imgSize.h + 260;
+            const totalH = imgSize.h + 260; // Keep tight vertical spacing
             const hRatio = (window.innerHeight) / totalH;
 
             // Width: Just machine width (plus margins)
@@ -415,7 +415,7 @@ export default function JugglerGame() {
             const subRng = Math.random();
             // 90% chance to win Grape/Cherry to sustain play
             if (subRng < 0.8) command = 'GRAPE';
-            else if (subRng < 0.9) command = 'CHERRY';
+            else if (subRng < 0.95) command = 'CHERRY';
             else command = 'MISS'; // Occasional miss
         } else if (stateRef.current.bonusFlag) {
             command = stateRef.current.bonusFlag;
