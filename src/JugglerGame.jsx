@@ -14,12 +14,12 @@ const SYMBOLS = ['7', 'BAR', '🍇', '🦏', '🍒', '🔔', '🤡'];
 // Probabilities from User Provided Image
 // Probabilities from User (Expanded for Logic + Rare Wins)
 const ODDS = {
-    1: { bb: '1/273.1', rb: '1/439.8', grape: '1/6.5', cherry: '1/33.0', replay: '1/7.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/168.5', payout: '97.0%' },
-    2: { bb: '1/269.7', rb: '1/399.6', grape: '1/6.4', cherry: '1/33.0', replay: '1/7.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/161.0', payout: '98.0%' },
-    3: { bb: '1/269.7', rb: '1/331.0', grape: '1/6.3', cherry: '1/33.0', replay: '1/7.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/148.6', payout: '99.5%' },
-    4: { bb: '1/259.0', rb: '1/315.1', grape: '1/6.2', cherry: '1/33.0', replay: '1/7.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/142.2', payout: '101.1%' },
-    5: { bb: '1/259.0', rb: '1/255.0', grape: '1/6.1', cherry: '1/33.0', replay: '1/7.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/128.5', payout: '103.3%' },
-    6: { bb: '1/255.0', rb: '1/255.0', grape: '1/6.0', cherry: '1/33.0', replay: '1/7.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/127.5', payout: '105.5%' },
+    1: { bb: '1/273.1', rb: '1/439.8', grape: '1/6.5', cherry: '1/33.0', replay: '1/7.3', bell: '1/1092.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/168.5', payout: '97.0%' },
+    2: { bb: '1/269.7', rb: '1/399.6', grape: '1/6.4', cherry: '1/33.0', replay: '1/7.3', bell: '1/1092.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/161.0', payout: '98.0%' },
+    3: { bb: '1/269.7', rb: '1/331.0', grape: '1/6.3', cherry: '1/33.0', replay: '1/7.3', bell: '1/1092.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/148.6', payout: '99.5%' },
+    4: { bb: '1/259.0', rb: '1/315.1', grape: '1/6.2', cherry: '1/33.0', replay: '1/7.3', bell: '1/1092.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/142.2', payout: '101.1%' },
+    5: { bb: '1/259.0', rb: '1/255.0', grape: '1/6.1', cherry: '1/33.0', replay: '1/7.3', bell: '1/1092.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/128.5', payout: '103.3%' },
+    6: { bb: '1/255.0', rb: '1/255.0', grape: '1/6.0', cherry: '1/33.0', replay: '1/7.3', bell: '1/1092.3', bar: '1/1024.0', juggler: '1/1024.0', total: '1/127.5', payout: '105.5%' },
 };
 
 // Exact 21-symbol sequences from provided image
@@ -429,6 +429,7 @@ export default function JugglerGame() {
             const pGrape = parseRatio(odds.grape);
             const pCherry = parseRatio(odds.cherry);
             const pReplay = parseRatio(odds.replay);
+            const pBell = parseRatio(odds.bell);
             const pBar = parseRatio(odds.bar);
             const pJuggler = parseRatio(odds.juggler);
 
@@ -438,7 +439,8 @@ export default function JugglerGame() {
             const tGrape = tRB + pGrape;
             const tCherry = tGrape + pCherry;
             const tReplay = tCherry + pReplay;
-            const tBar = tReplay + pBar;
+            const tBell = tReplay + pBell;
+            const tBar = tBell + pBar;
             const tJuggler = tBar + pJuggler;
 
             if (rng < tBB) {
@@ -473,6 +475,8 @@ export default function JugglerGame() {
                 command = 'CHERRY';
             } else if (rng < tReplay) {
                 command = 'REPLAY'; // Rhino
+            } else if (rng < tBell) {
+                command = 'BELL'; // Bell
             } else if (rng < tBar) {
                 command = 'BAR_WIN'; // 3 BARs
             } else if (rng < tJuggler) {
@@ -508,6 +512,9 @@ export default function JugglerGame() {
             if (found !== null) finalIdx = found;
         } else if (cmd === 'CHERRY' && idx === 0) {
             const found = findSymbolInSlip(idx, ['🍒'], naturalIdx);
+            if (found !== null) finalIdx = found;
+        } else if (cmd === 'BELL') {
+            const found = findSymbolInSlip(idx, ['🔔'], naturalIdx);
             if (found !== null) finalIdx = found;
         } else if (cmd === 'BAR_WIN') {
             const found = findSymbolInSlip(idx, ['BAR'], naturalIdx);
@@ -595,6 +602,7 @@ export default function JugglerGame() {
                     lineWin = true;
                 }
                 else if (s1 === '🦏' && s2 === '🦏' && s3 === '🦏') { replayTrigger = true; lineWin = true; }
+                else if (s1 === '🔔' && s2 === '🔔' && s3 === '🔔') { totalWin += 14; lineWin = true; } // Bell Win (14 Credits)
                 else if (s1 === '🤡' && s2 === '🤡' && s3 === '🤡') { totalWin += 14; lineWin = true; } // Juggler Win
                 else if (s1 === 'BAR' && s2 === 'BAR' && s3 === 'BAR') { totalWin += 14; lineWin = true; } // BAR Win
 
@@ -1101,6 +1109,10 @@ export default function JugglerGame() {
                                     <div className="flex justify-between border-b border-slate-800 pb-2">
                                         <span className="text-gray-400">BAR</span>
                                         <span className="text-white font-mono">{ODDS[setting].bar}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-yellow-600">Bell</span>
+                                        <span className="text-white font-mono">{ODDS[setting].bell}</span>
                                     </div>
                                     <div className="flex justify-between border-b border-slate-800 pb-2">
                                         <span className="text-pink-400">Juggler</span>
