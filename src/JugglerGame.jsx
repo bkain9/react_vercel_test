@@ -432,11 +432,9 @@ export default function JugglerGame() {
             if (rng < 0.1) {
                 setBonusFlag('BB');
                 command = 'BB';
-                setGogoState('ON'); // Immediate Light
             } else if (rng < 0.2) {
                 setBonusFlag('RB');
                 command = 'RB';
-                setGogoState('ON');
             } else {
                 // Normal small wins possible?
                 // Let's allow small wins with standard probability or reduced.
@@ -462,8 +460,8 @@ export default function JugglerGame() {
             }
 
             const odds = ODDS[setting];
-            const pBB = stateRef.current.gogoChanceMode ? 0.1 : parseRatio(odds.bb); // Boost if Mode On
-            const pRB = stateRef.current.gogoChanceMode ? 0.1 : parseRatio(odds.rb);
+            const pBB = stateRef.current.gogoChanceMode ? 0.05 : parseRatio(odds.bb); // Boost if Mode On
+            const pRB = stateRef.current.gogoChanceMode ? 0.05 : parseRatio(odds.rb);
             const pGrape = parseRatio(odds.grape);
             const pCherry = parseRatio(odds.cherry);
             const pReplay = parseRatio(odds.replay);
@@ -794,7 +792,7 @@ export default function JugglerGame() {
 
                 // Init Bonus Stage
                 setBonusStage({ type, count: 0 });
-                setGogoState('ON'); // Turn Lamp ON for celebration
+                setGogoState('OFF'); // Turn Lamp ON for celebration
                 soundManager.playFanfare(type);
 
                 // Update Stats (BB/RB Count)
