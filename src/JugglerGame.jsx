@@ -202,9 +202,10 @@ export default function JugglerGame() {
     const [spinCommand, setSpinCommand] = useState(null);
     const [winLine, setWinLine] = useState(0); // 0:Center, 1:Top, 2:Bottom, 3:CrossDown, 4:CrossUp
     const [winHighlights, setWinHighlights] = useState([]);
+    const [gogoChanceMode, setGogoChanceMode] = useState(false); // High Probability Mode
 
-    const stateRef = useRef({ spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage, coins, winLine });
-    useEffect(() => { stateRef.current = { spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage, coins, winLine }; }, [spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage, coins, winLine]);
+    const stateRef = useRef({ spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage, coins, winLine, gogoChanceMode });
+    useEffect(() => { stateRef.current = { spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage, coins, winLine, gogoChanceMode }; }, [spinning, canStop, isPlaying, bet, bonusFlag, spinCommand, credits, payout, isReplay, bonusStage, coins, winLine, gogoChanceMode]);
 
     // Helper: Parse "1/273.1" -> 1/273.1
     const parseRatio = (str) => {
@@ -421,11 +422,48 @@ export default function JugglerGame() {
             command = stateRef.current.bonusFlag;
             // Note: We could add 'Cherry while Flagged' logic here too if desired,
             // but usually we want to let the user collect the bonus.
-        } else {
+        } else if (stateRef.current.bonusFlag) {
+            command = stateRef.current.bonusFlag;
+            // Note: We could add 'Cherry while Flagged' logic here too if desired,
+            // but usually we want to let the user collect the bonus.
+        } else if (stateRef.current.gogoChanceMode) {
+            // --- GOGO CHANCE MODE (High Probability) ---
+            // 1/10 for BB, 1/10 for RB
+            if (rng < 0.1) {
+                setBonusFlag('BB');
+                command = 'BB';
+                setGogoState('ON'); // Immediate Light
+            } else if (rng < 0.2) {
+                setBonusFlag('RB');
+                command = 'RB';
+                setGogoState('ON');
+            } else {
+                // Normal small wins possible?
+                // Let's allow small wins with standard probability or reduced.
+                // For now, just MISS if not Bonus.
+                // Actually, user wants "High Probability".
+                // If miss, we should check standard odds? 
+                // Let's just fall through to standard odds if missed? 
+                // No, standard odds are low.
+                // Let's fallback to Standard Logic for small wins.
+                // But we must NOT overwrite command if it's already set?
+                // Actually, let's just use the standard logic below but with BOOSTED odds?
+                // Easier: Only override if Bonus Won.
+            }
+        }
+
+        if (command === 'MISS') {
             // 2. Roll for New Result (Cumulative)
+            // Check Random Entry for Gogo Chance (Low Prob: 0.5%)
+            if (!stateRef.current.gogoChanceMode && !stateRef.current.bonusFlag && Math.random() < 0.005) {
+                setGogoChanceMode(true);
+                setGogoState('ON'); // Flash Lamp
+                soundManager.playFanfare('BB'); // Fanfare on Entry
+            }
+
             const odds = ODDS[setting];
-            const pBB = parseRatio(odds.bb);
-            const pRB = parseRatio(odds.rb);
+            const pBB = stateRef.current.gogoChanceMode ? 0.1 : parseRatio(odds.bb); // Boost if Mode On
+            const pRB = stateRef.current.gogoChanceMode ? 0.1 : parseRatio(odds.rb);
             const pGrape = parseRatio(odds.grape);
             const pCherry = parseRatio(odds.cherry);
             const pReplay = parseRatio(odds.replay);
@@ -700,6 +738,32 @@ export default function JugglerGame() {
                         });
                     });
                 }
+                if (cherryCount >= 2) {
+                    totalWin += (bonusStage ? 14 : 2); // Bonus Mode Pays 14 for Cherry too
+                    // Highlight all cherries
+                    reelsObj.forEach((rObj, rIdx) => {
+                        [-1, 0, 1].forEach(offset => {
+                            const key = offset === -1 ? 'top' : (offset === 0 ? 'center' : 'bottom');
+                            if (rObj[key] === '🍒') {
+                                newHighlights.push({ r: rIdx, i: offset });
+                            }
+                        });
+                    });
+                }
+            }
+
+            // --- GOGO CHANCE TRIGGER (Cherry Center) ---
+            if (!bonusWon && !stateRef.current.gogoChanceMode && !stateRef.current.bonusFlag) {
+                // Check Center Line for Cherry (Left Reel Center is standard strong pattern)
+                const r0Center = getReelSymbols(0, stops[0]).center;
+                if (r0Center === '🍒') {
+                    // 20% Chance to Enter Mode
+                    if (Math.random() < 0.2) {
+                        setGogoChanceMode(true);
+                        setGogoState('ON');
+                        soundManager.playFanfare('BB'); // Fanfare on Entry
+                    }
+                }
             }
 
             if (replayTrigger) {
@@ -745,6 +809,7 @@ export default function JugglerGame() {
                 else setRbCount(c => c + 1);
                 setCurrentSpins(0); // Reset "Current Spins" counter
 
+                setGogoChanceMode(false); // Mode Consumed
                 // setGogoState('OFF'); // Removed: Let it stay ON until next spin
                 setBonusFlag(null);
                 setPayout(0); // No instant payout
