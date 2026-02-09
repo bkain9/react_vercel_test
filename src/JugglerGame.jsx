@@ -737,6 +737,7 @@ export default function JugglerGame() {
 
                 // Init Bonus Stage
                 setBonusStage({ type, count: 0 });
+                setGogoState('ON'); // Turn Lamp ON for celebration
                 soundManager.playFanfare(type);
 
                 // Update Stats (BB/RB Count)
@@ -744,7 +745,7 @@ export default function JugglerGame() {
                 else setRbCount(c => c + 1);
                 setCurrentSpins(0); // Reset "Current Spins" counter
 
-                setGogoState('OFF'); // Gogo Lamp OFF when Bonus Starts
+                // setGogoState('OFF'); // Removed: Let it stay ON until next spin
                 setBonusFlag(null);
                 setPayout(0); // No instant payout
                 setBet(0);
