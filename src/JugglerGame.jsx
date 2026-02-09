@@ -497,35 +497,50 @@ export default function JugglerGame() {
         let finalIdx = naturalIdx;
         const cmd = stateRef.current.spinCommand;
 
-        // Helper to find symbol distance in next 4 frames
-        const findSymbolInSlip = (reelId, targetSyms, startIdx) => {
+        // Helper to find symbol distance in next 4 frames (Prioritize Avoiding specific neighbors like Cherry)
+        const findCleanSymbolInSlip = (reelId, targetSyms, startIdx, avoidSyms = []) => {
             const strip = REELS[reelId];
+            let backupIdx = null;
+
             for (let i = 0; i <= 4; i++) {
-                const checkIdx = (startIdx + i) % 21;
-                if (targetSyms.includes(strip[checkIdx])) return checkIdx;
+                const idx = (startIdx + i) % 21; // Center Index where we might stop
+                const symbol = strip[idx];
+
+                if (targetSyms.includes(symbol)) {
+                    // Check Neighbors for Avoid Symbols (Top and Bottom)
+                    // Note: If target itself is in avoid list (e.g. cherry), we ignore that (it's the target!)
+                    // UNLESS check is for NEIGHBORS only.
+                    const top = strip[(idx - 1 + 21) % 21];
+                    const bottom = strip[(idx + 1) % 21];
+
+                    const isDirty = avoidSyms.includes(top) || avoidSyms.includes(bottom);
+
+                    if (!isDirty) return idx; // Found clean target!
+                    if (backupIdx === null) backupIdx = idx; // Keep matching (but dirty) index as backup
+                }
             }
-            return null;
+            return backupIdx; // Return best match found (Clean or Dirty)
         };
 
         if (cmd === 'GRAPE') {
-            const found = findSymbolInSlip(idx, ['🍇'], naturalIdx);
+            const found = findCleanSymbolInSlip(idx, ['🍇'], naturalIdx, ['🍒']);
             if (found !== null) finalIdx = found;
         } else if (cmd === 'CHERRY' && idx === 0) {
-            const found = findSymbolInSlip(idx, ['🍒'], naturalIdx);
+            const found = findCleanSymbolInSlip(idx, ['🍒'], naturalIdx, []); // Don't avoid logic for cherry itself
             if (found !== null) finalIdx = found;
         } else if (cmd === 'BELL') {
-            const found = findSymbolInSlip(idx, ['🔔'], naturalIdx);
+            const found = findCleanSymbolInSlip(idx, ['🔔'], naturalIdx, ['🍒']);
             if (found !== null) finalIdx = found;
         } else if (cmd === 'BAR_WIN') {
-            const found = findSymbolInSlip(idx, ['BAR'], naturalIdx);
+            const found = findCleanSymbolInSlip(idx, ['BAR'], naturalIdx, ['🍒']);
             if (found !== null) finalIdx = found;
         } else if (cmd === 'JUGGLER') {
-            const found = findSymbolInSlip(idx, ['🤡'], naturalIdx);
+            const found = findCleanSymbolInSlip(idx, ['🤡'], naturalIdx, ['🍒']);
             if (found !== null) finalIdx = found;
         } else if (cmd === 'BB' || cmd === 'RB' || stateRef.current.bonusFlag) {
             // Aim for 7 or BAR (Bonus Flag Logic)
             const target = (cmd === 'RB' && idx === 2) ? ['BAR'] : ['7'];
-            const found = findSymbolInSlip(idx, target, naturalIdx);
+            const found = findCleanSymbolInSlip(idx, target, naturalIdx, ['🍒']);
             if (found !== null) finalIdx = found;
         } else {
             // MISS: Prevent 7/BAR alignment
