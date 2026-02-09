@@ -497,12 +497,12 @@ export default function JugglerGame() {
         let finalIdx = naturalIdx;
         const cmd = stateRef.current.spinCommand;
 
-        // Helper to find symbol distance in next 4 frames (Prioritize Avoiding specific neighbors like Cherry)
-        const findCleanSymbolInSlip = (reelId, targetSyms, startIdx, avoidSyms = []) => {
+        // Helper to find symbol distance in next 'maxFrames' frames (Prioritize Avoiding specific neighbors like Cherry)
+        const findCleanSymbolInSlip = (reelId, targetSyms, startIdx, avoidSyms = [], maxFrames = 4) => {
             const strip = REELS[reelId];
             let backupIdx = null;
 
-            for (let i = 0; i <= 4; i++) {
+            for (let i = 0; i <= maxFrames; i++) {
                 const idx = (startIdx + i) % 21; // Center Index where we might stop
                 const symbol = strip[idx];
 
@@ -540,7 +540,8 @@ export default function JugglerGame() {
         } else if (cmd === 'BB' || cmd === 'RB' || stateRef.current.bonusFlag) {
             // Aim for 7 or BAR (Bonus Flag Logic)
             const target = (cmd === 'RB' && idx === 2) ? ['BAR'] : ['7'];
-            const found = findCleanSymbolInSlip(idx, target, naturalIdx, ['🍒']);
+            // FULL REEL ASSIST (21 frames) if Bonus Flag is active - Ensure easy win even with Bet 1
+            const found = findCleanSymbolInSlip(idx, target, naturalIdx, ['🍒'], 21);
             if (found !== null) finalIdx = found;
         } else {
             // MISS: Prevent 7/BAR alignment
