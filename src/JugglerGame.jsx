@@ -670,16 +670,9 @@ export default function JugglerGame() {
             ];
 
             // Determine Active Lines based on Bet (Standard Juggler Rules)
-            // Bet 1: Center (1 Line)
-            // Bet 2: Center, Top, Bottom (3 Lines)
-            // Bet 3 (Max): All 5 Lines
-            // Replay counts as Max Bet (Free Spin with full lines)
-            const evalBet = stateRef.current.isReplay ? 3 : stateRef.current.bet;
-            // Note: If in Bonus Stage, user might bet 1 or 2. We respect that.
-            // If evalBet is 0 (shouldn't happen here if logic holds, but safe fallback 1)
-            const safeBet = evalBet || 1;
-            const activeLineCount = safeBet >= 3 ? 5 : (safeBet === 2 ? 3 : 1);
-            const activeLineDefs = lineDefs.slice(0, activeLineCount);
+            // User Request: "Bet 1, 2, 3 should all win if shape matches" (Revert strict rules)
+            // So we use ALL lines always.
+            const activeLineDefs = lineDefs;
 
             for (const { offsets, symbols } of activeLineDefs) {
                 const [s1, s2, s3] = symbols;
