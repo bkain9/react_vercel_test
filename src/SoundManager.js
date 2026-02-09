@@ -104,8 +104,8 @@ class SoundManager {
         osc.stop(now + 0.15);
     }
 
-    startSpinSound() {
-        this.stopFanfare(); // Ensure bonus sound stops on new spin
+    startSpinSound(preserveFanfare = false) {
+        if (!preserveFanfare) this.stopFanfare(); // Ensure bonus sound stops on new spin unless preserved
         this.init();
         if (this.spinOsc) return; // Already spinng
 
