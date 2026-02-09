@@ -730,518 +730,517 @@ export default function JugglerGame() {
                             }
                         });
                     });
-                });
-}
+                }
             }
 
-// --- GOGO CHANCE TRIGGER (Cherry Center) ---
-if (!bonusWon && !stateRef.current.gogoChanceMode && !stateRef.current.bonusFlag && !stateRef.current.bonusStage) {
-    // Check Center Line for Cherry (Left Reel Center is standard strong pattern)
-    const r0Center = getReelSymbols(0, stops[0]).center;
-    if (r0Center === '🍒') {
-        // 20% Chance to Enter Mode
-        if (Math.random() < 0.2) {
-            setGogoChanceMode(true);
-            setGogoState('ON');
-            soundManager.playWin(); // Different Sound (Standard Win)
+            // --- GOGO CHANCE TRIGGER (Cherry Center) ---
+            if (!bonusWon && !stateRef.current.gogoChanceMode && !stateRef.current.bonusFlag && !stateRef.current.bonusStage) {
+                // Check Center Line for Cherry (Left Reel Center is standard strong pattern)
+                const r0Center = getReelSymbols(0, stops[0]).center;
+                if (r0Center === '🍒') {
+                    // 20% Chance to Enter Mode
+                    if (Math.random() < 0.2) {
+                        setGogoChanceMode(true);
+                        setGogoState('ON');
+                        soundManager.playWin(); // Different Sound (Standard Win)
+                    }
+                }
+            }
+
+            if (replayTrigger) {
+                soundManager.playWin();
+                // Persist Bonus Flag/Lamp during Replay
+                setPayout(0); // Replay pays 0
+                setIsReplay(true);
+                // Bet remains as is
+            } else if (bonusWon) {
+                // --- ENTER BONUS STAGE ---
+                // Determine Type based on Spin Command or alignment (Simplified: use spinCommand if available, else BB default)
+                // Actually we should inspect the line. But we know what we stopped. 
+                // Let's use internal check:
+                let type = 'BB';
+
+                // Robust Check: Inspect actual lines for 7-7-BAR (RB)
+                const r0 = getReelSymbols(0, stops[0]);
+                const r1 = getReelSymbols(1, stops[1]);
+                const r2 = getReelSymbols(2, stops[2]);
+
+                const checkLines = [
+                    [r0.center, r1.center, r2.center],
+                    [r0.top, r1.top, r2.top],
+                    [r0.bottom, r1.bottom, r2.bottom],
+                    [r0.top, r1.center, r2.bottom],
+                    [r0.bottom, r1.center, r2.top]
+                ];
+
+                for (const line of checkLines) {
+                    if (line[0] === '7' && line[1] === '7' && line[2] === 'BAR') {
+                        type = 'RB';
+                        break;
+                    }
+                }
+
+                // Init Bonus Stage
+                setBonusStage({ type, count: 0 });
+                // setGogoState('OFF'); // Ensure Gogo Lamp is not forced ON, or force OFF.
+                // User said "Don't need to light up". Usually lamp goes OFF at start of bonus.
+                setGogoState('OFF');
+                soundManager.playFanfare(type);
+
+                // Update Stats (BB/RB Count)
+                if (type === 'BB') setBbCount(c => c + 1);
+                else setRbCount(c => c + 1);
+                setCurrentSpins(0); // Reset "Current Spins" counter
+
+                setGogoChanceMode(false); // Mode Consumed
+                // setGogoState('OFF'); // Removed: Let it stay ON until next spin
+                setBonusFlag(null);
+                setPayout(0); // No instant payout
+                setBet(0);
+
+            } else if (totalWin > 0) {
+                soundManager.playWin();
+
+                // --- BONUS STAGE PROGRESS ---
+                if (bonusStage) {
+                    const add = totalWin;
+                    const nextCount = bonusStage.count + add;
+                    const limit = bonusStage.type === 'BB' ? 280 : 98;
+
+                    if (nextCount > limit) {
+                        // --- BONUS END ---
+                        setBonusStage(null);
+                        setGogoState('OFF');
+                        soundManager.stopFanfare(); // Or play end sound
+                    } else {
+                        // Continue Bonus
+                        setBonusStage(prev => ({ ...prev, count: nextCount }));
+                    }
+                }
+
+                // --- PAYOUT DISPLAY ---
+                // We do NOT add to credits immediately. User must Bet or Pull Lever to collect.
+                setPayout(totalWin);
+                setBet(0); // Bet consumed
+
+            } else {
+                setBet(0); // Bet consumed even on loss
+            }
+
+            // --- ATO-GOGO (Post-Spin Lamp) ---
+            if (!bonusWon && stateRef.current.bonusFlag && gogoState !== 'ON') {
+                setGogoState('ON');
+                soundManager.playWin();
+            }
+
+            if (newHighlights.length > 0) {
+                setWinHighlights(newHighlights);
+                setTimeout(() => setWinHighlights([]), 2000);
+            }
         }
-    }
-}
-
-if (replayTrigger) {
-    soundManager.playWin();
-    // Persist Bonus Flag/Lamp during Replay
-    setPayout(0); // Replay pays 0
-    setIsReplay(true);
-    // Bet remains as is
-} else if (bonusWon) {
-    // --- ENTER BONUS STAGE ---
-    // Determine Type based on Spin Command or alignment (Simplified: use spinCommand if available, else BB default)
-    // Actually we should inspect the line. But we know what we stopped. 
-    // Let's use internal check:
-    let type = 'BB';
-
-    // Robust Check: Inspect actual lines for 7-7-BAR (RB)
-    const r0 = getReelSymbols(0, stops[0]);
-    const r1 = getReelSymbols(1, stops[1]);
-    const r2 = getReelSymbols(2, stops[2]);
-
-    const checkLines = [
-        [r0.center, r1.center, r2.center],
-        [r0.top, r1.top, r2.top],
-        [r0.bottom, r1.bottom, r2.bottom],
-        [r0.top, r1.center, r2.bottom],
-        [r0.bottom, r1.center, r2.top]
-    ];
-
-    for (const line of checkLines) {
-        if (line[0] === '7' && line[1] === '7' && line[2] === 'BAR') {
-            type = 'RB';
-            break;
-        }
-    }
-
-    // Init Bonus Stage
-    setBonusStage({ type, count: 0 });
-    // setGogoState('OFF'); // Ensure Gogo Lamp is not forced ON, or force OFF.
-    // User said "Don't need to light up". Usually lamp goes OFF at start of bonus.
-    setGogoState('OFF');
-    soundManager.playFanfare(type);
-
-    // Update Stats (BB/RB Count)
-    if (type === 'BB') setBbCount(c => c + 1);
-    else setRbCount(c => c + 1);
-    setCurrentSpins(0); // Reset "Current Spins" counter
-
-    setGogoChanceMode(false); // Mode Consumed
-    // setGogoState('OFF'); // Removed: Let it stay ON until next spin
-    setBonusFlag(null);
-    setPayout(0); // No instant payout
-    setBet(0);
-
-} else if (totalWin > 0) {
-    soundManager.playWin();
-
-    // --- BONUS STAGE PROGRESS ---
-    if (bonusStage) {
-        const add = totalWin;
-        const nextCount = bonusStage.count + add;
-        const limit = bonusStage.type === 'BB' ? 280 : 98;
-
-        if (nextCount > limit) {
-            // --- BONUS END ---
-            setBonusStage(null);
-            setGogoState('OFF');
-            soundManager.stopFanfare(); // Or play end sound
-        } else {
-            // Continue Bonus
-            setBonusStage(prev => ({ ...prev, count: nextCount }));
-        }
-    }
-
-    // --- PAYOUT DISPLAY ---
-    // We do NOT add to credits immediately. User must Bet or Pull Lever to collect.
-    setPayout(totalWin);
-    setBet(0); // Bet consumed
-
-} else {
-    setBet(0); // Bet consumed even on loss
-}
-
-// --- ATO-GOGO (Post-Spin Lamp) ---
-if (!bonusWon && stateRef.current.bonusFlag && gogoState !== 'ON') {
-    setGogoState('ON');
-    soundManager.playWin();
-}
-
-if (newHighlights.length > 0) {
-    setWinHighlights(newHighlights);
-    setTimeout(() => setWinHighlights([]), 2000);
-}
-                        }
     }, [spinning, isPlaying, stops]);
 
 
-// Keyboard
-useEffect(() => {
-    const handleKey = (e) => {
-        if (e.code === 'Space') {
-            e.preventDefault();
-            pullLever();
-        }
-        if (e.key === 'q' || e.key === 'Q') {
-            handleBetPlus()
-        }
-        if (e.code === 'Backquote' || e.key === '`') {
-            // MAX BET (3)
-            handleBetChange(3);
-        }
-        if (e.key === '1') stopReel(0);
-        if (e.key === '2') stopReel(1);
-        if (e.key === '3') stopReel(2);
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-}, [credits, payout, bet]); // Add dependecies for closure? 
-// Actually handleBetChange uses state variables from closure if defined inside component.
-// Better to use stateRef inside handleBetChange or ensure useEffect updates.
-// I switched handleBetChange to use 'credits' state directly. 
-// Wait, 'handleKey' is verified once [] with listener. This captures stale state!
-// FIX: Use ref for everything inside handleKey or handleBetChange.
+    // Keyboard
+    useEffect(() => {
+        const handleKey = (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                pullLever();
+            }
+            if (e.key === 'q' || e.key === 'Q') {
+                handleBetPlus()
+            }
+            if (e.code === 'Backquote' || e.key === '`') {
+                // MAX BET (3)
+                handleBetChange(3);
+            }
+            if (e.key === '1') stopReel(0);
+            if (e.key === '2') stopReel(1);
+            if (e.key === '3') stopReel(2);
+        };
+        window.addEventListener('keydown', handleKey);
+        return () => window.removeEventListener('keydown', handleKey);
+    }, [credits, payout, bet]); // Add dependecies for closure? 
+    // Actually handleBetChange uses state variables from closure if defined inside component.
+    // Better to use stateRef inside handleBetChange or ensure useEffect updates.
+    // I switched handleBetChange to use 'credits' state directly. 
+    // Wait, 'handleKey' is verified once [] with listener. This captures stale state!
+    // FIX: Use ref for everything inside handleKey or handleBetChange.
 
-// Changing strategy: Since I am replacing the block, I will make handleKey rely on stateRef entirely or re-bind.
-// I already have stateRef updating in line 178.
-// I will rewrite handleBetChange to use stateRef values OR use functional updates carefully.
-// Safest: Use stateRef.current for reading, setters for writing.
+    // Changing strategy: Since I am replacing the block, I will make handleKey rely on stateRef entirely or re-bind.
+    // I already have stateRef updating in line 178.
+    // I will rewrite handleBetChange to use stateRef values OR use functional updates carefully.
+    // Safest: Use stateRef.current for reading, setters for writing.
 
-// IMPORTANT: 'credits' and 'payout' inside handleBetChange must be fresh.
-// But 'stateRef' only tracks { spinning, canStop, isPlaying, bet... }. It does NOT track credits/payout!
-// I MUST ADD credits/payout to stateRef to use them in the Ref-based handler.
+    // IMPORTANT: 'credits' and 'payout' inside handleBetChange must be fresh.
+    // But 'stateRef' only tracks { spinning, canStop, isPlaying, bet... }. It does NOT track credits/payout!
+    // I MUST ADD credits/payout to stateRef to use them in the Ref-based handler.
 
-return (
-    <div className="w-screen h-screen bg-neutral-900 flex items-start justify-center overflow-hidden pt-[20px]">
+    return (
+        <div className="w-screen h-screen bg-neutral-900 flex items-start justify-center overflow-hidden pt-[20px]">
 
-        <div
-            className="flex flex-col items-center justify-start gap-4"
-            style={{
-                transform: `scale(${scale})`,
-                transformOrigin: 'top center',
-            }}
-        >
-            {/* DATA COUNTER (Mobile Layout) - MAX UPSCALE WIDTH MATCHED */}
             <div
-                className="bg-gradient-to-b from-neutral-800 to-neutral-900 rounded-xl border-2 border-slate-600 p-2 text-white shadow-2xl mb-2 shrink-0"
-                style={{ width: `${imgSize.w}px`, fontSize: '24px', fontWeight: 'bold' }}
-            >
-                <div className="bg-black rounded-lg p-4 mb-2 flex justify-between items-center relative overflow-hidden border border-slate-700">
-                    <div className="relative z-10 flex flex-col items-center w-full">
-                        <span className="text-lg text-red-500 font-bold tracking-widest mb-1">DATA COUNTER</span>
-                        <div className="flex justify-between w-full px-12 mt-1">
-                            <div className="flex flex-col items-center"></div>
-                            <div className="flex flex-col items-center">
-                                <span className="text-xl font-bold text-slate-400">BIG</span>
-                                <span className="text-6xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
-                            </div>
-                            <div className="flex flex-col items-center">
-                                <span className="text-xl font-bold text-slate-400">REG</span>
-                                <span className="text-6xl font-['Digital-7'] text-green-500 drop-shadow-[0_0_5px_green]">{rbCount}</span>
-                            </div>
-                            <div className="flex flex-col items-center">
-                                <span className="text-xl font-bold text-slate-400">TOTAL</span>
-                                <span className="text-5xl font-['Digital-7'] text-white">{totalSpins}</span>
-                            </div>
-                            <div className="flex flex-col items-center"></div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Main Counter */}
-                <div className="bg-black/50 rounded p-6 flex flex-col items-center justify-center border border-slate-700">
-                    <span className="text-xl text-yellow-500 font-bold mb-1">CURRENT SPINS : {currentSpins}</span>
-                    <span className="text-sm text-slate-500">Total Prob: 1 / {totalSpins > 0 ? (totalSpins / (bbCount + rbCount || 1)).toFixed(1) : '-'}</span>
-                </div>
-            </div>
-
-            {/* MACHINE */}
-            <div style={{
-                width: `${imgSize.w}px`,
-                height: `${imgSize.h}px`,
-                position: 'relative',
-                boxShadow: '0 0 50px rgba(0,0,0,0.5)'
-            }}>
-
-                {/* 1. BACKGROUND IMAGE */}
-                <div className="absolute inset-0 z-0 bg-transparent rounded-xl overflow-hidden">
-                    <img
-                        src="/machine.png"
-                        alt="Slot Machine Background"
-                        className="w-full h-full object-cover"
-                        onLoad={(e) => {
-                            // Update container size to match image
-                            if (e.target.naturalWidth > 0) {
-                                setImgSize({ w: e.target.naturalWidth, h: e.target.naturalHeight });
-                            }
-                        }}
-                    />
-                </div>
-
-                {/* 2. REEL WINDOW LAYER */}
-                <div
-                    className="absolute z-10 flex justify-between items-center bg-black shadow-[inset_0_0_20px_black] border-0"
-                    style={{
-                        top: `${(REEL_SPECS.y / imgSize.h) * 100}%`,
-                        left: `${(REEL_SPECS.x / imgSize.w) * 100}%`,
-                        width: `${(REEL_SPECS.w / imgSize.w) * 100}%`,
-                        height: `${(REEL_SPECS.h / imgSize.h) * 100}%`,
-                    }}
-                >
-                    {/* Reels with Calculated % Width for Spacing */}
-                    <div className="h-full relative" style={{ width: '30%' }}><Reel id={0} spinning={spinning[0]} stopIndex={stops[0]} windowHeight={REEL_SPECS.h} xOffset={REEL_X_OFFSETS[0]} highlights={winHighlights.filter(h => h.r === 0).map(h => h.i)} /></div>
-                    <div className="h-full relative" style={{ width: '30%' }}><Reel id={1} spinning={spinning[1]} stopIndex={stops[1]} windowHeight={REEL_SPECS.h} xOffset={REEL_X_OFFSETS[1]} highlights={winHighlights.filter(h => h.r === 1).map(h => h.i)} /></div>
-                    <div className="h-full relative" style={{ width: '30%' }}><Reel id={2} spinning={spinning[2]} stopIndex={stops[2]} windowHeight={REEL_SPECS.h} xOffset={REEL_X_OFFSETS[2]} highlights={winHighlights.filter(h => h.r === 2).map(h => h.i)} /></div>
-                </div>
-
-                {/* 3. DIGITAL DISPLAYS (CREDIT, COUNT, PAYOUT) */}
-                <div className="absolute z-20 pointer-events-none" style={{ top: 0, left: 0, width: '100%', height: '100%' }}>
-                    {/* CREDIT: 222, 490 (2 digits) */}
-                    <div
-                        className="absolute flex gap-[4px]"
-                        style={{
-                            left: `${(224 / imgSize.w) * 100}%`,
-                            top: `${(484 / imgSize.h) * 100}%`
-                        }}
-                    >
-                        <span className="absolute opacity-10 text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '32px', textAlign: 'center' }}>
-                            88
-                        </span>
-                        <span className="relative text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '32px', textAlign: 'center', filter: 'contrast(1.5) brightness(1.2)' }}>
-                            {Math.min(credits, 99).toString().padStart(2, '0')}
-                        </span>
-                    </div>
-
-                    {/* COUNT: 296, 490 (3 digits) */}
-                    <div
-                        className="absolute flex gap-[4px]"
-                        style={{
-                            left: `${(294 / imgSize.w) * 100}%`,
-                            top: `${(484 / imgSize.h) * 100}%`
-                        }}
-                    >
-                        <span className="absolute opacity-10 text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '42px', textAlign: 'center' }}>
-                            888
-                        </span>
-                        <span className="text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '42px', textAlign: 'center', filter: 'contrast(1.5) brightness(1.2)' }}>
-                            {bonusStage ? bonusStage.count.toString().padStart(3, '0') : '000'}
-                        </span>
-                    </div>
-
-                    {/* PAYOUT: 380, 490 (2 digits) */}
-                    <div
-                        className="absolute flex gap-[4px]"
-                        style={{
-                            left: `${(378 / imgSize.w) * 100}%`,
-                            top: `${(484 / imgSize.h) * 100}%`
-                        }}
-                    >
-                        <span className="absolute opacity-10 text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '32px', textAlign: 'center' }}>
-                            88
-                        </span>
-                        <span className="text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '32px', textAlign: 'center', filter: 'contrast(1.5) brightness(1.2)' }}>
-                            {Math.min(payout, 99).toString().padStart(2, '0')}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Bet Indicator Overlay (64, 316, 38x116) */}
-                <img
-                    src={`./bet_${bet}.png`}
-                    alt={`Bet ${bet}`}
-                    className="absolute z-20 pointer-events-none"
-                    style={{
-                        left: `${(64 / imgSize.w) * 100}%`,
-                        top: `${(316 / imgSize.h) * 100}%`,
-                        width: `${(38 / imgSize.w) * 100}%`,
-                        height: `${(116 / imgSize.h) * 100}%`
-                    }}
-                />
-
-                {/* GOGO CHANCE Overlay (50, 430, 118x107) */}
-                {gogoState === 'ON' && (
-                    <img
-                        src="./chance.png"
-                        alt="Gogo Chance"
-                        className="absolute z-20 pointer-events-none animate-pulse-fast"
-                        style={{
-                            left: `${(50 / imgSize.w) * 100}%`,
-                            top: `${(430 / imgSize.h) * 100}%`,
-                            width: `${(118 / imgSize.w) * 100}%`,
-                            height: `${(107 / imgSize.h) * 100}%`
-                        }}
-                    />
-                )}
-
-                {/* 4. TOUCH CONTROLS (Absolute Positioning) */}
-                {/* Insert (Credits): 438, 506 (90x48) */}
-                <div
-                    className="absolute z-30 cursor-pointer active:bg-white/20 rounded-md hover:ring-2 hover:ring-yellow-500/50"
-                    style={{ left: `${(438 / imgSize.w) * 100}%`, top: `${(506 / imgSize.h) * 100}%`, width: `${(90 / imgSize.w) * 100}%`, height: `${(48 / imgSize.h) * 100}%` }}
-                    onClick={handleInsertCoin}
-                    title="Insert Coin"
-                ></div>
-
-                {/* Bet 1 (Plus): 40, 590 (38x38) */}
-                <div
-                    className="absolute z-30 cursor-pointer active:bg-white/20 rounded-full hover:ring-2 hover:ring-yellow-500/50"
-                    style={{ left: `${(40 / imgSize.w) * 100}%`, top: `${(590 / imgSize.h) * 100}%`, width: `${(38 / imgSize.w) * 100}%`, height: `${(38 / imgSize.h) * 100}%` }}
-                    onClick={handleBetPlus}
-                    title="Bet +1"
-                ></div>
-
-                {/* Max Bet: 176, 526 (48x28) */}
-                <div
-                    className="absolute z-30 cursor-pointer active:bg-white/20 rounded-md hover:ring-2 hover:ring-yellow-500/50"
-                    style={{ left: `${(176 / imgSize.w) * 100}%`, top: `${(526 / imgSize.h) * 100}%`, width: `${(48 / imgSize.w) * 100}%`, height: `${(28 / imgSize.h) * 100}%` }}
-                    onClick={() => handleBetChange(3)}
-                    title="Max Bet"
-                ></div>
-
-                {/* Lever: 128, 580 (54x54) */}
-                {/* Lever: INCREASED TOUCH AREA (128, 580 origin) -> 100x100 box centered approx */}
-                <div
-                    className="absolute z-30 cursor-pointer active:bg-white/20 rounded-full hover:ring-2 hover:ring-yellow-500/50"
-                    style={{
-                        left: `${(108 / imgSize.w) * 100}%`,
-                        top: `${(560 / imgSize.h) * 100}%`,
-                        width: `${(100 / imgSize.w) * 100}%`,
-                        height: `${(100 / imgSize.h) * 100}%`
-                    }}
-                    onClick={pullLever}
-                    title="Start Spin"
-                ></div>
-
-                {/* HIDDEN TOUCH TRIGGER (Triple Tap Config) */}
-                <div
-                    className="absolute z-50 cursor-pointer"
-                    style={{
-                        left: '20%',
-                        bottom: '0%',
-                        width: '60%',
-                        height: '150px',
-                        opacity: 0
-                    }}
-                    onClick={handleSecretTap}
-                ></div>
-
-                {/* Stop Buttons: 222, 578 (186x54) - Flex Container */}
-                {/* Stop Buttons: INCREASED TOUCH AREA. top 560, height 90 */}
-                <div
-                    className="absolute z-30 flex justify-between"
-                    style={{ left: `${(218 / imgSize.w) * 100}%`, top: `${(560 / imgSize.h) * 100}%`, width: `${(194 / imgSize.w) * 100}%`, height: `${(90 / imgSize.h) * 100}%` }}
-                >
-                    <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded" onMouseDown={() => stopReel(0)}></div>
-                    <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded mx-1" onMouseDown={() => stopReel(1)}></div>
-                    <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded" onMouseDown={() => stopReel(2)}></div>
-                </div>
-
-            </div>
-
-            {/* COIN BOX (Under Machine) - ROW LAYOUT */}
-            <div
-                className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-row items-center justify-between px-4 py-3 shadow-2xl"
+                className="flex flex-col items-center justify-start gap-4"
                 style={{
-                    width: `${imgSize.w}px`, // Match machine width
-                    height: '60px',
-                    marginTop: '0', // Adjust overlap
-                    fontSize: '24px',
-                    fontWeight: 'bold',
-                    zIndex: 5
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'top center',
                 }}
             >
-                {/* CENTER: COIN DISPLAY (Single Line) */}
-                <div className="flex-1 flex items-center justify-center pl-2 gap-3">
-                    <span className="text-gray-500 text-sm font-bold tracking-widest whitespace-nowrap">MY COINS :&nbsp;</span>
-                    <span className="text-3xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_10px_rgba(234,179,8,0.6)] leading-none">
-                        {coins.toLocaleString()}
-                    </span>
-                    <span className="text-yellow-700 text-lg font-bold leading-none">&nbsp;EA</span>
-                </div>
-
-                {/* RIGHT: BUTTON */}
-                <button
-                    onClick={handleChargeCoins}
-                    disabled={isCharging}
-                    className={`shrink-0 bg-green-600 hover:bg-green-500 text-white text-lg font-bold py-3 px-6 rounded-lg shadow-[0_3px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[3px] transition-all border border-green-700 mr-[10px] ${isCharging ? 'opacity-50 cursor-not-allowed' : 'animate-pulse-slow'}`}
-                    style={{ height: '40px', fontSize: '20px', backgroundColor: 'green' }}
+                {/* DATA COUNTER (Mobile Layout) - MAX UPSCALE WIDTH MATCHED */}
+                <div
+                    className="bg-gradient-to-b from-neutral-800 to-neutral-900 rounded-xl border-2 border-slate-600 p-2 text-white shadow-2xl mb-2 shrink-0"
+                    style={{ width: `${imgSize.w}px`, fontSize: '24px', fontWeight: 'bold' }}
                 >
-                    {isCharging ? '...' : 'CHARGE'}
-                </button>
-            </div>
-
-            {/* CONFIG MODAL */}
-            {showConfig && (
-                <div className="fixed inset-0 z-[100] bg-black h-[100dvh] w-[80%] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
-                    <div
-                        className="w-full max-w-[800px] bg-neutral-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative"
-                        style={{ zIndex: 100, backgroundColor: 'black', fontSize: '26px', padding: '20px' }}
-                    >
-                        <button
-                            onClick={() => setShowConfig(false)}
-                            className="absolute top-2 right-2 p-2 text-slate-400 hover:text-white"
-                        >✕</button>
-
-                        <h2 className="text-2xl font-bold text-center text-yellow-400 border-b border-slate-600 pb-4">
-                            🎰 Config
-                        </h2>
-
-                        <div>
-                            <label className="block text-slate-400 mb-3 font-semibold text-sm">Game Setting (Start Value)</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                {[1, 2, 3, 4, 5, 6].map(num => (
-                                    <button
-                                        key={num}
-                                        onClick={() => {
-                                            soundManager.playClick();
-                                            setSetting(num);
-                                            // Reset Game State ("New Game")
-                                            setGogoState('OFF');
-                                            setBonusFlag(null);
-                                            setBonusStage(null);
-                                            setBet(0);
-                                            setPayout(0);
-                                            setCredits(50);
-                                            setWinHighlights([]);
-                                            setCoins(0);
-                                            // Reset Stats
-                                            setCurrentSpins(0);
-                                            setTotalSpins(0);
-                                            setBbCount(0);
-                                            setRbCount(0);
-                                        }}
-                                        style={{ fontSize: '30px', height: '60px' }}
-                                        className={`
-                                            py-3 rounded-lg font-black text-xl transition-all
-                                            ${setting === num
-                                                ? 'bg-gradient-to-br from-pink-500 to-red-600 shadow-[0_0_15px_red] scale-105'
-                                                : 'bg-slate-700 hover:bg-slate-600 text-slate-400'}
-                                        `}
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
+                    <div className="bg-black rounded-lg p-4 mb-2 flex justify-between items-center relative overflow-hidden border border-slate-700">
+                        <div className="relative z-10 flex flex-col items-center w-full">
+                            <span className="text-lg text-red-500 font-bold tracking-widest mb-1">DATA COUNTER</span>
+                            <div className="flex justify-between w-full px-12 mt-1">
+                                <div className="flex flex-col items-center"></div>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-xl font-bold text-slate-400">BIG</span>
+                                    <span className="text-6xl font-['Digital-7'] text-red-500 drop-shadow-[0_0_5px_red]">{bbCount}</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-xl font-bold text-slate-400">REG</span>
+                                    <span className="text-6xl font-['Digital-7'] text-green-500 drop-shadow-[0_0_5px_green]">{rbCount}</span>
+                                </div>
+                                <div className="flex flex-col items-center">
+                                    <span className="text-xl font-bold text-slate-400">TOTAL</span>
+                                    <span className="text-5xl font-['Digital-7'] text-white">{totalSpins}</span>
+                                </div>
+                                <div className="flex flex-col items-center"></div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Stats Table */}
-                        <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                            <h3 className="text-xs text-slate-400 mb-3 uppercase tracking-wider text-center font-bold"> Set {setting} Stats</h3>
-                            <div className="space-y-3 text-sm">
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-blue-400 font-bold">BB Prob</span>
-                                    <span className="font-mono text-white">{ODDS[setting].bb}</span>
+                    {/* Main Counter */}
+                    <div className="bg-black/50 rounded p-6 flex flex-col items-center justify-center border border-slate-700">
+                        <span className="text-xl text-yellow-500 font-bold mb-1">CURRENT SPINS : {currentSpins}</span>
+                        <span className="text-sm text-slate-500">Total Prob: 1 / {totalSpins > 0 ? (totalSpins / (bbCount + rbCount || 1)).toFixed(1) : '-'}</span>
+                    </div>
+                </div>
+
+                {/* MACHINE */}
+                <div style={{
+                    width: `${imgSize.w}px`,
+                    height: `${imgSize.h}px`,
+                    position: 'relative',
+                    boxShadow: '0 0 50px rgba(0,0,0,0.5)'
+                }}>
+
+                    {/* 1. BACKGROUND IMAGE */}
+                    <div className="absolute inset-0 z-0 bg-transparent rounded-xl overflow-hidden">
+                        <img
+                            src="/machine.png"
+                            alt="Slot Machine Background"
+                            className="w-full h-full object-cover"
+                            onLoad={(e) => {
+                                // Update container size to match image
+                                if (e.target.naturalWidth > 0) {
+                                    setImgSize({ w: e.target.naturalWidth, h: e.target.naturalHeight });
+                                }
+                            }}
+                        />
+                    </div>
+
+                    {/* 2. REEL WINDOW LAYER */}
+                    <div
+                        className="absolute z-10 flex justify-between items-center bg-black shadow-[inset_0_0_20px_black] border-0"
+                        style={{
+                            top: `${(REEL_SPECS.y / imgSize.h) * 100}%`,
+                            left: `${(REEL_SPECS.x / imgSize.w) * 100}%`,
+                            width: `${(REEL_SPECS.w / imgSize.w) * 100}%`,
+                            height: `${(REEL_SPECS.h / imgSize.h) * 100}%`,
+                        }}
+                    >
+                        {/* Reels with Calculated % Width for Spacing */}
+                        <div className="h-full relative" style={{ width: '30%' }}><Reel id={0} spinning={spinning[0]} stopIndex={stops[0]} windowHeight={REEL_SPECS.h} xOffset={REEL_X_OFFSETS[0]} highlights={winHighlights.filter(h => h.r === 0).map(h => h.i)} /></div>
+                        <div className="h-full relative" style={{ width: '30%' }}><Reel id={1} spinning={spinning[1]} stopIndex={stops[1]} windowHeight={REEL_SPECS.h} xOffset={REEL_X_OFFSETS[1]} highlights={winHighlights.filter(h => h.r === 1).map(h => h.i)} /></div>
+                        <div className="h-full relative" style={{ width: '30%' }}><Reel id={2} spinning={spinning[2]} stopIndex={stops[2]} windowHeight={REEL_SPECS.h} xOffset={REEL_X_OFFSETS[2]} highlights={winHighlights.filter(h => h.r === 2).map(h => h.i)} /></div>
+                    </div>
+
+                    {/* 3. DIGITAL DISPLAYS (CREDIT, COUNT, PAYOUT) */}
+                    <div className="absolute z-20 pointer-events-none" style={{ top: 0, left: 0, width: '100%', height: '100%' }}>
+                        {/* CREDIT: 222, 490 (2 digits) */}
+                        <div
+                            className="absolute flex gap-[4px]"
+                            style={{
+                                left: `${(224 / imgSize.w) * 100}%`,
+                                top: `${(484 / imgSize.h) * 100}%`
+                            }}
+                        >
+                            <span className="absolute opacity-10 text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '32px', textAlign: 'center' }}>
+                                88
+                            </span>
+                            <span className="relative text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '32px', textAlign: 'center', filter: 'contrast(1.5) brightness(1.2)' }}>
+                                {Math.min(credits, 99).toString().padStart(2, '0')}
+                            </span>
+                        </div>
+
+                        {/* COUNT: 296, 490 (3 digits) */}
+                        <div
+                            className="absolute flex gap-[4px]"
+                            style={{
+                                left: `${(294 / imgSize.w) * 100}%`,
+                                top: `${(484 / imgSize.h) * 100}%`
+                            }}
+                        >
+                            <span className="absolute opacity-10 text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '42px', textAlign: 'center' }}>
+                                888
+                            </span>
+                            <span className="text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '42px', textAlign: 'center', filter: 'contrast(1.5) brightness(1.2)' }}>
+                                {bonusStage ? bonusStage.count.toString().padStart(3, '0') : '000'}
+                            </span>
+                        </div>
+
+                        {/* PAYOUT: 380, 490 (2 digits) */}
+                        <div
+                            className="absolute flex gap-[4px]"
+                            style={{
+                                left: `${(378 / imgSize.w) * 100}%`,
+                                top: `${(484 / imgSize.h) * 100}%`
+                            }}
+                        >
+                            <span className="absolute opacity-10 text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '32px', textAlign: 'center' }}>
+                                88
+                            </span>
+                            <span className="text-[#ff0000] font-['Digital-7'] font-bold leading-none tracking-widest drop-shadow-[0_0_8px_rgba(255,0,0,0.9)]" style={{ fontSize: '32px', width: '32px', textAlign: 'center', filter: 'contrast(1.5) brightness(1.2)' }}>
+                                {Math.min(payout, 99).toString().padStart(2, '0')}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Bet Indicator Overlay (64, 316, 38x116) */}
+                    <img
+                        src={`./bet_${bet}.png`}
+                        alt={`Bet ${bet}`}
+                        className="absolute z-20 pointer-events-none"
+                        style={{
+                            left: `${(64 / imgSize.w) * 100}%`,
+                            top: `${(316 / imgSize.h) * 100}%`,
+                            width: `${(38 / imgSize.w) * 100}%`,
+                            height: `${(116 / imgSize.h) * 100}%`
+                        }}
+                    />
+
+                    {/* GOGO CHANCE Overlay (50, 430, 118x107) */}
+                    {gogoState === 'ON' && (
+                        <img
+                            src="./chance.png"
+                            alt="Gogo Chance"
+                            className="absolute z-20 pointer-events-none animate-pulse-fast"
+                            style={{
+                                left: `${(50 / imgSize.w) * 100}%`,
+                                top: `${(430 / imgSize.h) * 100}%`,
+                                width: `${(118 / imgSize.w) * 100}%`,
+                                height: `${(107 / imgSize.h) * 100}%`
+                            }}
+                        />
+                    )}
+
+                    {/* 4. TOUCH CONTROLS (Absolute Positioning) */}
+                    {/* Insert (Credits): 438, 506 (90x48) */}
+                    <div
+                        className="absolute z-30 cursor-pointer active:bg-white/20 rounded-md hover:ring-2 hover:ring-yellow-500/50"
+                        style={{ left: `${(438 / imgSize.w) * 100}%`, top: `${(506 / imgSize.h) * 100}%`, width: `${(90 / imgSize.w) * 100}%`, height: `${(48 / imgSize.h) * 100}%` }}
+                        onClick={handleInsertCoin}
+                        title="Insert Coin"
+                    ></div>
+
+                    {/* Bet 1 (Plus): 40, 590 (38x38) */}
+                    <div
+                        className="absolute z-30 cursor-pointer active:bg-white/20 rounded-full hover:ring-2 hover:ring-yellow-500/50"
+                        style={{ left: `${(40 / imgSize.w) * 100}%`, top: `${(590 / imgSize.h) * 100}%`, width: `${(38 / imgSize.w) * 100}%`, height: `${(38 / imgSize.h) * 100}%` }}
+                        onClick={handleBetPlus}
+                        title="Bet +1"
+                    ></div>
+
+                    {/* Max Bet: 176, 526 (48x28) */}
+                    <div
+                        className="absolute z-30 cursor-pointer active:bg-white/20 rounded-md hover:ring-2 hover:ring-yellow-500/50"
+                        style={{ left: `${(176 / imgSize.w) * 100}%`, top: `${(526 / imgSize.h) * 100}%`, width: `${(48 / imgSize.w) * 100}%`, height: `${(28 / imgSize.h) * 100}%` }}
+                        onClick={() => handleBetChange(3)}
+                        title="Max Bet"
+                    ></div>
+
+                    {/* Lever: 128, 580 (54x54) */}
+                    {/* Lever: INCREASED TOUCH AREA (128, 580 origin) -> 100x100 box centered approx */}
+                    <div
+                        className="absolute z-30 cursor-pointer active:bg-white/20 rounded-full hover:ring-2 hover:ring-yellow-500/50"
+                        style={{
+                            left: `${(108 / imgSize.w) * 100}%`,
+                            top: `${(560 / imgSize.h) * 100}%`,
+                            width: `${(100 / imgSize.w) * 100}%`,
+                            height: `${(100 / imgSize.h) * 100}%`
+                        }}
+                        onClick={pullLever}
+                        title="Start Spin"
+                    ></div>
+
+                    {/* HIDDEN TOUCH TRIGGER (Triple Tap Config) */}
+                    <div
+                        className="absolute z-50 cursor-pointer"
+                        style={{
+                            left: '20%',
+                            bottom: '0%',
+                            width: '60%',
+                            height: '150px',
+                            opacity: 0
+                        }}
+                        onClick={handleSecretTap}
+                    ></div>
+
+                    {/* Stop Buttons: 222, 578 (186x54) - Flex Container */}
+                    {/* Stop Buttons: INCREASED TOUCH AREA. top 560, height 90 */}
+                    <div
+                        className="absolute z-30 flex justify-between"
+                        style={{ left: `${(218 / imgSize.w) * 100}%`, top: `${(560 / imgSize.h) * 100}%`, width: `${(194 / imgSize.w) * 100}%`, height: `${(90 / imgSize.h) * 100}%` }}
+                    >
+                        <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded" onMouseDown={() => stopReel(0)}></div>
+                        <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded mx-1" onMouseDown={() => stopReel(1)}></div>
+                        <div className="flex-1 cursor-pointer active:bg-white/20 hover:ring-2 hover:ring-blue-500/50 rounded" onMouseDown={() => stopReel(2)}></div>
+                    </div>
+
+                </div>
+
+                {/* COIN BOX (Under Machine) - ROW LAYOUT */}
+                <div
+                    className="bg-black border-4 border-neutral-800 rounded-b-xl flex flex-row items-center justify-between px-4 py-3 shadow-2xl"
+                    style={{
+                        width: `${imgSize.w}px`, // Match machine width
+                        height: '60px',
+                        marginTop: '0', // Adjust overlap
+                        fontSize: '24px',
+                        fontWeight: 'bold',
+                        zIndex: 5
+                    }}
+                >
+                    {/* CENTER: COIN DISPLAY (Single Line) */}
+                    <div className="flex-1 flex items-center justify-center pl-2 gap-3">
+                        <span className="text-gray-500 text-sm font-bold tracking-widest whitespace-nowrap">MY COINS :&nbsp;</span>
+                        <span className="text-3xl text-yellow-500 font-mono font-bold drop-shadow-[0_0_10px_rgba(234,179,8,0.6)] leading-none">
+                            {coins.toLocaleString()}
+                        </span>
+                        <span className="text-yellow-700 text-lg font-bold leading-none">&nbsp;EA</span>
+                    </div>
+
+                    {/* RIGHT: BUTTON */}
+                    <button
+                        onClick={handleChargeCoins}
+                        disabled={isCharging}
+                        className={`shrink-0 bg-green-600 hover:bg-green-500 text-white text-lg font-bold py-3 px-6 rounded-lg shadow-[0_3px_0_rgb(21,80,30)] active:shadow-none active:translate-y-[3px] transition-all border border-green-700 mr-[10px] ${isCharging ? 'opacity-50 cursor-not-allowed' : 'animate-pulse-slow'}`}
+                        style={{ height: '40px', fontSize: '20px', backgroundColor: 'green' }}
+                    >
+                        {isCharging ? '...' : 'CHARGE'}
+                    </button>
+                </div>
+
+                {/* CONFIG MODAL */}
+                {showConfig && (
+                    <div className="fixed inset-0 z-[100] bg-black h-[100dvh] w-[80%] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
+                        <div
+                            className="w-full max-w-[800px] bg-neutral-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative"
+                            style={{ zIndex: 100, backgroundColor: 'black', fontSize: '26px', padding: '20px' }}
+                        >
+                            <button
+                                onClick={() => setShowConfig(false)}
+                                className="absolute top-2 right-2 p-2 text-slate-400 hover:text-white"
+                            >✕</button>
+
+                            <h2 className="text-2xl font-bold text-center text-yellow-400 border-b border-slate-600 pb-4">
+                                🎰 Config
+                            </h2>
+
+                            <div>
+                                <label className="block text-slate-400 mb-3 font-semibold text-sm">Game Setting (Start Value)</label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {[1, 2, 3, 4, 5, 6].map(num => (
+                                        <button
+                                            key={num}
+                                            onClick={() => {
+                                                soundManager.playClick();
+                                                setSetting(num);
+                                                // Reset Game State ("New Game")
+                                                setGogoState('OFF');
+                                                setBonusFlag(null);
+                                                setBonusStage(null);
+                                                setBet(0);
+                                                setPayout(0);
+                                                setCredits(50);
+                                                setWinHighlights([]);
+                                                setCoins(0);
+                                                // Reset Stats
+                                                setCurrentSpins(0);
+                                                setTotalSpins(0);
+                                                setBbCount(0);
+                                                setRbCount(0);
+                                            }}
+                                            style={{ fontSize: '30px', height: '60px' }}
+                                            className={`
+                                            py-3 rounded-lg font-black text-xl transition-all
+                                            ${setting === num
+                                                    ? 'bg-gradient-to-br from-pink-500 to-red-600 shadow-[0_0_15px_red] scale-105'
+                                                    : 'bg-slate-700 hover:bg-slate-600 text-slate-400'}
+                                        `}
+                                        >
+                                            {num}
+                                        </button>
+                                    ))}
                                 </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-green-400 font-bold">RB Prob</span>
-                                    <span className="font-mono text-white">{ODDS[setting].rb}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-purple-400">Grape</span>
-                                    <span className="text-white font-mono">{ODDS[setting].grape}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-red-400">Cherry</span>
-                                    <span className="text-white font-mono">{ODDS[setting].cherry}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-yellow-400">Replay(Rhino)</span>
-                                    <span className="text-white font-mono">{ODDS[setting].replay}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-gray-400">BAR</span>
-                                    <span className="text-white font-mono">{ODDS[setting].bar}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-yellow-600">Bell</span>
-                                    <span className="text-white font-mono">{ODDS[setting].bell}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-pink-400">Juggler</span>
-                                    <span className="text-white font-mono">{ODDS[setting].juggler}</span>
-                                </div>
-                                <div className="flex justify-between border-slate-800 pt-1">
-                                    <span className="text-slate-400">Bonus Sum</span>
-                                    <span className="text-white font-mono">{ODDS[setting].total}</span>
-                                </div>
-                                <div className="flex justify-between pt-1">
-                                    <span className="text-yellow-400 font-bold">Payout</span>
-                                    <span className="font-mono text-yellow-200">{ODDS[setting].payout}</span>
+                            </div>
+
+                            {/* Stats Table */}
+                            <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                                <h3 className="text-xs text-slate-400 mb-3 uppercase tracking-wider text-center font-bold"> Set {setting} Stats</h3>
+                                <div className="space-y-3 text-sm">
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-blue-400 font-bold">BB Prob</span>
+                                        <span className="font-mono text-white">{ODDS[setting].bb}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-green-400 font-bold">RB Prob</span>
+                                        <span className="font-mono text-white">{ODDS[setting].rb}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-purple-400">Grape</span>
+                                        <span className="text-white font-mono">{ODDS[setting].grape}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-red-400">Cherry</span>
+                                        <span className="text-white font-mono">{ODDS[setting].cherry}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-yellow-400">Replay(Rhino)</span>
+                                        <span className="text-white font-mono">{ODDS[setting].replay}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-gray-400">BAR</span>
+                                        <span className="text-white font-mono">{ODDS[setting].bar}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-yellow-600">Bell</span>
+                                        <span className="text-white font-mono">{ODDS[setting].bell}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-pink-400">Juggler</span>
+                                        <span className="text-white font-mono">{ODDS[setting].juggler}</span>
+                                    </div>
+                                    <div className="flex justify-between border-slate-800 pt-1">
+                                        <span className="text-slate-400">Bonus Sum</span>
+                                        <span className="text-white font-mono">{ODDS[setting].total}</span>
+                                    </div>
+                                    <div className="flex justify-between pt-1">
+                                        <span className="text-yellow-400 font-bold">Payout</span>
+                                        <span className="font-mono text-yellow-200">{ODDS[setting].payout}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
 
-        </div>
-    </div >
-);
-                }
+            </div>
+        </div >
+    );
+}
