@@ -606,32 +606,32 @@ export default function JugglerGame() {
             }
 
             // CHERRY CHECK (Scatter Logic: Total 2+ Cherries = 2 Credits)
-            // Check all 9 visible symbols
-            let cherryCount = 0;
-            const reelsObj = [r0, r1, r2];
-            reelsObj.forEach((rObj, rIdx) => {
-                [-1, 0, 1].forEach(offset => {
-                    const key = offset === -1 ? 'top' : (offset === 0 ? 'center' : 'bottom');
-                    if (rObj[key] === '🍒') {
-                        cherryCount++;
-                        // We will highlight ALL cherries if we win via cherry
-                        // But we only decide highlighting later?
-                        // Actually, if we win cherry, we highlight them.
-                    }
-                });
-            });
-
-            if (cherryCount >= 2) {
-                totalWin += (bonusStage ? 14 : 2); // Bonus Mode Pays 14 for Cherry too (Simplified high payout)
-                // Highlight all cherries
+            // MUTUALLY EXCLUSIVE: Only check if no other win occurred
+            if (totalWin === 0 && !bonusWon && !replayTrigger) {
+                // Check all 9 visible symbols
+                let cherryCount = 0;
+                const reelsObj = [r0, r1, r2];
                 reelsObj.forEach((rObj, rIdx) => {
                     [-1, 0, 1].forEach(offset => {
                         const key = offset === -1 ? 'top' : (offset === 0 ? 'center' : 'bottom');
                         if (rObj[key] === '🍒') {
-                            newHighlights.push({ r: rIdx, i: offset });
+                            cherryCount++;
                         }
                     });
                 });
+
+                if (cherryCount >= 2) {
+                    totalWin += (bonusStage ? 14 : 2); // Bonus Mode Pays 14 for Cherry too
+                    // Highlight all cherries
+                    reelsObj.forEach((rObj, rIdx) => {
+                        [-1, 0, 1].forEach(offset => {
+                            const key = offset === -1 ? 'top' : (offset === 0 ? 'center' : 'bottom');
+                            if (rObj[key] === '🍒') {
+                                newHighlights.push({ r: rIdx, i: offset });
+                            }
+                        });
+                    });
+                }
             }
 
             if (replayTrigger) {
