@@ -526,7 +526,6 @@ const stopReel = (idx) => {
 
     let naturalIdx = Math.floor(Math.random() * 21);
     let finalIdx = naturalIdx;
-    let finalIdx = naturalIdx;
     const cmd = stateRef.current.spinCommand;
     const lineIdx = stateRef.current.winLine || 0;
 
