@@ -353,7 +353,6 @@ export default function JugglerGame() {
         const currentBet = stateRef.current.bet;
 
         if (currentBet === 0) return; // Must have bet
-        if (currentBet === 0) return;
 
         soundManager.playClick();
         soundManager.startSpinSound(!!stateRef.current.bonusStage);
