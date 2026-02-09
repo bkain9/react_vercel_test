@@ -218,7 +218,7 @@ export default function JugglerGame() {
         const handleResize = () => {
             // Fit to screen (Max height 90vh, Max width 95vw)
             // Vertical Layout: Machine Height + Counter (~120px) + CoinBox (~80px) + Gaps
-            const totalH = imgSize.h + 260; // Keep tight vertical spacing
+            const totalH = imgSize.h + 260;
             const hRatio = (window.innerHeight) / totalH;
 
             // Width: Just machine width (plus margins)
@@ -818,12 +818,11 @@ export default function JugglerGame() {
                         <img
                             src="/machine.png"
                             alt="Slot Machine Background"
-                            className="w-full h-full object-fill"
+                            className="w-full h-full object-cover"
                             onLoad={(e) => {
                                 // Update container size to match image
-                                const { naturalWidth, naturalHeight } = e.target;
-                                if (naturalWidth > 0 && naturalHeight > 0) {
-                                    setImgSize({ w: naturalWidth, h: naturalHeight });
+                                if (e.target.naturalWidth > 0) {
+                                    setImgSize({ w: e.target.naturalWidth, h: e.target.naturalHeight });
                                 }
                             }}
                         />
@@ -1021,107 +1020,107 @@ export default function JugglerGame() {
                     </button>
                 </div>
 
-            </div>
+                {/* CONFIG MODAL */}
+                {showConfig && (
+                    <div className="fixed inset-0 z-[100] bg-black h-[100dvh] w-[80%] flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
+                        <div
+                            className="w-full max-w-[800px] bg-neutral-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative"
+                            style={{ zIndex: 100, backgroundColor: 'black', fontSize: '26px', padding: '20px' }}
+                        >
+                            <button
+                                onClick={() => setShowConfig(false)}
+                                className="absolute top-2 right-2 p-2 text-slate-400 hover:text-white"
+                            >✕</button>
 
-            {/* CONFIG MODAL - Moved outside to escape transform context */}
-            {showConfig && (
-                <div className="fixed inset-0 z-[100] bg-black/90 h-[100dvh] w-full flex items-center justify-center p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowConfig(false) }}>
-                    <div
-                        className="w-full max-w-[500px] bg-neutral-900 rounded-xl border-4 border-slate-500 p-6 text-white shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col gap-6 relative max-h-[90vh] overflow-y-auto"
-                        style={{ fontSize: '16px' }}
-                    >
-                        <button
-                            onClick={() => setShowConfig(false)}
-                            className="absolute top-2 right-2 p-2 text-slate-400 hover:text-white"
-                        >✕</button>
+                            <h2 className="text-2xl font-bold text-center text-yellow-400 border-b border-slate-600 pb-4">
+                                🎰 Config
+                            </h2>
 
-                        <h2 className="text-2xl font-bold text-center text-yellow-400 border-b border-slate-600 pb-4">
-                            🎰 Config
-                        </h2>
-
-                        <div>
-                            <label className="block text-slate-400 mb-3 font-semibold text-sm">Game Setting (Start Value)</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                {[1, 2, 3, 4, 5, 6].map(num => (
-                                    <button
-                                        key={num}
-                                        onClick={() => {
-                                            soundManager.playClick();
-                                            setSetting(num);
-                                            // Reset Game State ("New Game")
-                                            setGogoState('OFF');
-                                            setBonusFlag(null);
-                                            setBonusStage(null);
-                                            setBet(0);
-                                            setPayout(0);
-                                            setCredits(50);
-                                            setWinHighlights([]);
-                                            setCoins(0);
-                                            // Reset Stats
-                                            setCurrentSpins(0);
-                                            setTotalSpins(0);
-                                            setBbCount(0);
-                                            setRbCount(0);
-                                        }}
-                                        style={{ fontSize: '24px', height: '50px' }}
-                                        className={`
-                                        rounded-lg font-black text-xl transition-all
-                                        ${setting === num
-                                                ? 'bg-gradient-to-br from-pink-500 to-red-600 shadow-[0_0_15px_red] scale-105'
-                                                : 'bg-slate-700 hover:bg-slate-600 text-slate-400'}
-                                    `}
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
+                            <div>
+                                <label className="block text-slate-400 mb-3 font-semibold text-sm">Game Setting (Start Value)</label>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {[1, 2, 3, 4, 5, 6].map(num => (
+                                        <button
+                                            key={num}
+                                            onClick={() => {
+                                                soundManager.playClick();
+                                                setSetting(num);
+                                                // Reset Game State ("New Game")
+                                                setGogoState('OFF');
+                                                setBonusFlag(null);
+                                                setBonusStage(null);
+                                                setBet(0);
+                                                setPayout(0);
+                                                setCredits(50);
+                                                setWinHighlights([]);
+                                                setCoins(0);
+                                                // Reset Stats
+                                                setCurrentSpins(0);
+                                                setTotalSpins(0);
+                                                setBbCount(0);
+                                                setRbCount(0);
+                                            }}
+                                            style={{ fontSize: '30px', height: '60px' }}
+                                            className={`
+                                            py-3 rounded-lg font-black text-xl transition-all
+                                            ${setting === num
+                                                    ? 'bg-gradient-to-br from-pink-500 to-red-600 shadow-[0_0_15px_red] scale-105'
+                                                    : 'bg-slate-700 hover:bg-slate-600 text-slate-400'}
+                                        `}
+                                        >
+                                            {num}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Stats Table */}
-                        <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
-                            <h3 className="text-xs text-slate-400 mb-3 uppercase tracking-wider text-center font-bold"> Set {setting} Stats</h3>
-                            <div className="space-y-2 text-sm">
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-blue-400 font-bold">BB Prob</span>
-                                    <span className="font-mono text-white">{ODDS[setting].bb}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-green-400 font-bold">RB Prob</span>
-                                    <span className="font-mono text-white">{ODDS[setting].rb}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-purple-400">Grape</span>
-                                    <span className="text-white font-mono">{ODDS[setting].grape}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-red-400">Cherry</span>
-                                    <span className="text-white font-mono">{ODDS[setting].cherry}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-yellow-400">Replay(Rhino)</span>
-                                    <span className="text-white font-mono">{ODDS[setting].replay}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-gray-400">BAR</span>
-                                    <span className="text-white font-mono">{ODDS[setting].bar}</span>
-                                </div>
-                                <div className="flex justify-between border-b border-slate-800 pb-2">
-                                    <span className="text-pink-400">Juggler</span>
-                                    <span className="text-white font-mono">{ODDS[setting].juggler}</span>
-                                </div>
-                                <div className="flex justify-between border-slate-800 pt-1">
-                                    <span className="text-slate-400">Bonus Sum</span>
-                                    <span className="text-white font-mono">{ODDS[setting].total}</span>
-                                </div>
-                                <div className="flex justify-between pt-1">
-                                    <span className="text-yellow-400 font-bold">Payout</span>
-                                    <span className="font-mono text-yellow-200">{ODDS[setting].payout}</span>
+                            {/* Stats Table */}
+                            <div className="bg-slate-900 rounded-lg p-4 border border-slate-700">
+                                <h3 className="text-xs text-slate-400 mb-3 uppercase tracking-wider text-center font-bold"> Set {setting} Stats</h3>
+                                <div className="space-y-3 text-sm">
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-blue-400 font-bold">BB Prob</span>
+                                        <span className="font-mono text-white">{ODDS[setting].bb}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-green-400 font-bold">RB Prob</span>
+                                        <span className="font-mono text-white">{ODDS[setting].rb}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-purple-400">Grape</span>
+                                        <span className="text-white font-mono">{ODDS[setting].grape}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-red-400">Cherry</span>
+                                        <span className="text-white font-mono">{ODDS[setting].cherry}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-yellow-400">Replay(Rhino)</span>
+                                        <span className="text-white font-mono">{ODDS[setting].replay}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-gray-400">BAR</span>
+                                        <span className="text-white font-mono">{ODDS[setting].bar}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-pink-400">Juggler</span>
+                                        <span className="text-white font-mono">{ODDS[setting].juggler}</span>
+                                    </div>
+                                    <div className="flex justify-between border-slate-800 pt-1">
+                                        <span className="text-slate-400">Bonus Sum</span>
+                                        <span className="text-white font-mono">{ODDS[setting].total}</span>
+                                    </div>
+                                    <div className="flex justify-between pt-1">
+                                        <span className="text-yellow-400 font-bold">Payout</span>
+                                        <span className="font-mono text-yellow-200">{ODDS[setting].payout}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+
+            </div>
         </div >
     );
 }
