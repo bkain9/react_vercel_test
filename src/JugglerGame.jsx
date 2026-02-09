@@ -12,13 +12,14 @@ import { soundManager } from './SoundManager';
 const SYMBOLS = ['7', 'BAR', '🍇', '🦏', '🍒', '🔔', '🤡'];
 
 // Probabilities from User Provided Image
+// Probabilities from User (Expanded for Logic)
 const ODDS = {
-    1: { bb: '1/273.1', rb: '1/439.8', total: '1/168.5', payout: '97.0%' },
-    2: { bb: '1/269.7', rb: '1/399.6', total: '1/161.0', payout: '98.0%' },
-    3: { bb: '1/269.7', rb: '1/331.0', total: '1/148.6', payout: '99.5%' },
-    4: { bb: '1/259.0', rb: '1/315.1', total: '1/142.2', payout: '101.1%' },
-    5: { bb: '1/259.0', rb: '1/255.0', total: '1/128.5', payout: '103.3%' },
-    6: { bb: '1/255.0', rb: '1/255.0', total: '1/127.5', payout: '105.5%' },
+    1: { bb: '1/273.1', rb: '1/439.8', grape: '1/6.5', cherry: '1/33.0', replay: '1/7.3', total: '1/168.5', payout: '97.0%' },
+    2: { bb: '1/269.7', rb: '1/399.6', grape: '1/6.4', cherry: '1/33.0', replay: '1/7.3', total: '1/161.0', payout: '98.0%' },
+    3: { bb: '1/269.7', rb: '1/331.0', grape: '1/6.3', cherry: '1/33.0', replay: '1/7.3', total: '1/148.6', payout: '99.5%' },
+    4: { bb: '1/259.0', rb: '1/315.1', grape: '1/6.2', cherry: '1/33.0', replay: '1/7.3', total: '1/142.2', payout: '101.1%' },
+    5: { bb: '1/259.0', rb: '1/255.0', grape: '1/6.1', cherry: '1/33.0', replay: '1/7.3', total: '1/128.5', payout: '103.3%' },
+    6: { bb: '1/255.0', rb: '1/255.0', grape: '1/6.0', cherry: '1/33.0', replay: '1/7.3', total: '1/127.5', payout: '105.5%' },
 };
 
 // Exact 21-symbol sequences from provided image
@@ -403,15 +404,14 @@ export default function JugglerGame() {
 
         setTimeout(() => setCanStop([true, true, true]), 200);
 
-        // --- RNG LOGIC ---
+        // --- RNG LOGIC (Mutually Exclusive Cumulative Check) ---
         let command = 'MISS';
         const rng = Math.random();
 
-        // 1. Check Bonus Flag (Priority) - BUT Ignore if in Bonus Stage
+        // 1. Check Bonus Flag (Priority) - If already flagged, prioritize aiming for it
         if (stateRef.current.bonusStage) {
             // --- BONUS STAGE RNG ---
             // High probability of win (Grape/Cherry)
-            // Payout is 14.
             const subRng = Math.random();
             // 90% chance to win Grape/Cherry to sustain play
             if (subRng < 0.8) command = 'GRAPE';
@@ -419,41 +419,58 @@ export default function JugglerGame() {
             else command = 'MISS'; // Occasional miss
         } else if (stateRef.current.bonusFlag) {
             command = stateRef.current.bonusFlag;
+            // Note: We could add 'Cherry while Flagged' logic here too if desired,
+            // but usually we want to let the user collect the bonus.
         } else {
-            // 2. Roll for New Bonus
+            // 2. Roll for New Result (Cumulative)
             const odds = ODDS[setting];
-            const probBB = parseRatio(odds.bb);
-            const probRB = parseRatio(odds.rb);
+            const pBB = parseRatio(odds.bb);
+            const pRB = parseRatio(odds.rb);
+            const pGrape = parseRatio(odds.grape);
+            const pCherry = parseRatio(odds.cherry);
+            const pReplay = parseRatio(odds.replay);
 
-            if (rng < probBB) {
+            // Cumulative Thresholds
+            const tBB = pBB;
+            const tRB = tBB + pRB;
+            const tGrape = tRB + pGrape;
+            const tCherry = tGrape + pCherry;
+            const tReplay = tCherry + pReplay;
+
+            if (rng < tBB) {
+                // --- WON BB ---
                 setBonusFlag('BB');
-                // Simultaneous Cherry Check (5% chance)
+                // Simul Cherry (5%)
                 if (Math.random() < 0.05) {
                     command = 'CHERRY';
-                    setGogoState('OFF'); // Light up after spin (Ato-Gogo)
+                    setGogoState('OFF'); // Ato-Gogo
                 } else {
-                    // Standard Bonus flow
-                    if (Math.random() < 0.25) setGogoState('ON'); // Saki
-                    else setGogoState('OFF'); // Ato
                     command = 'BB';
+                    // Saki-Gogo (25%)
+                    if (Math.random() < 0.25) setGogoState('ON');
+                    else setGogoState('OFF');
                 }
-            } else if (rng < probBB + probRB) {
+            } else if (rng < tRB) {
+                // --- WON RB ---
                 setBonusFlag('RB');
+                // Simul Cherry (5%)
                 if (Math.random() < 0.05) {
                     command = 'CHERRY';
                     setGogoState('OFF');
                 } else {
+                    command = 'RB';
+                    // Saki-Gogo (25%)
                     if (Math.random() < 0.25) setGogoState('ON');
                     else setGogoState('OFF');
-                    command = 'RB';
                 }
+            } else if (rng < tGrape) {
+                command = 'GRAPE';
+            } else if (rng < tCherry) {
+                command = 'CHERRY';
+            } else if (rng < tReplay) {
+                command = 'REPLAY'; // Rhino
             } else {
-                // 3. Small Win (Grape/Cherry)
-                const probGrape = 1 / 7.3;
-                const probCherry = 1 / 33;
-                const subRng = Math.random();
-                if (subRng < probGrape) command = 'GRAPE';
-                else if (subRng < probGrape + probCherry) command = 'CHERRY';
+                command = 'MISS';
             }
         }
         setSpinCommand(command);
@@ -1056,8 +1073,20 @@ export default function JugglerGame() {
                                         <span className="font-mono text-white">{ODDS[setting].rb}</span>
                                     </div>
                                     <div className="flex justify-between border-b border-slate-800 pb-2">
-                                        <span className="text-purple-400 font-bold">Bonus Sum</span>
-                                        <span className="font-mono text-white">{ODDS[setting].total}</span>
+                                        <span className="text-purple-400">Grape</span>
+                                        <span className="text-white font-mono">{ODDS[setting].grape}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-red-400">Cherry</span>
+                                        <span className="text-white font-mono">{ODDS[setting].cherry}</span>
+                                    </div>
+                                    <div className="flex justify-between border-b border-slate-800 pb-2">
+                                        <span className="text-yellow-400">Replay(Rhino)</span>
+                                        <span className="text-white font-mono">{ODDS[setting].replay}</span>
+                                    </div>
+                                    <div className="flex justify-between border-slate-800 pt-1">
+                                        <span className="text-slate-400">Bonus Sum</span>
+                                        <span className="text-white font-mono">{ODDS[setting].total}</span>
                                     </div>
                                     <div className="flex justify-between pt-1">
                                         <span className="text-yellow-400 font-bold">Payout</span>
