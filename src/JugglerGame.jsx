@@ -659,8 +659,7 @@ export default function JugglerGame() {
 
             if (replayTrigger) {
                 soundManager.playWin();
-                setBonusFlag(null);
-                setGogoState('OFF');
+                // Persist Bonus Flag/Lamp during Replay
                 setPayout(0); // Replay pays 0
                 setIsReplay(true);
                 // Bet remains as is
